@@ -1,0 +1,9 @@
+{
+  "name": "odysseus-foxtrail",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node tests.mjs"
+  }
+}

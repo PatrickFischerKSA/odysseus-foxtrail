@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#081d2b">
+  <title>Die verlorenen Spuren des Odysseus</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ3ynhQNr8kRlaZt2uDqzHfMMGAJvMZ8=" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <video class="cinematic-bg" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
+    <source src="assets/media/odyssey-trailer-background.m4v" type="video/mp4">
+  </video>
+  <a class="skip" href="#main">Zum Inhalt</a>
+  <header class="topbar">
+    <button class="brand" data-view="trail" aria-label="Zur Foxtrail-Karte">
+      <span class="owl">◉</span><span>ATHENES ARCHIV</span>
+    </button>
+    <nav aria-label="Hauptnavigation">
+      <button data-view="trail" aria-current="page">Foxtrail</button>
+      <button data-view="threads">Erzählstränge</button>
+      <button data-view="route">Reiseroute</button>
+      <button data-view="characters">Figuren</button>
+      <button data-view="clues">Indizien</button>
+      <button data-view="media">Video-Spur</button>
+      <button data-view="writing">Schreibprojekt</button>
+    </nav>
+    <button class="score wallet-button" data-view="economy" aria-live="polite" aria-label="Eulen-Konto öffnen">
+      <span id="owlScore">0</span> Eulen <span aria-hidden="true">›</span>
+    </button>
+  </header>
+
+  <aside class="resource-bar" aria-label="Lektüre-Ressourcen">
+    <div class="resource-label">
+      <span class="resource-icon">✦</span>
+      <span><strong>Ressourcen zur Lektüre</strong><small>Buch lesen oder Hörbuch öffnen</small></span>
+    </div>
+    <div class="resource-actions">
+      <a class="resource-button book" href="assets/media/lechner-die-abenteuer-des-odysseus.pdf" target="_blank">
+        <span aria-hidden="true">▤</span><span><strong>Buch als PDF</strong><small>Auguste Lechners Text öffnen</small></span>
+      </a>
+      <a class="resource-button audio" href="https://www.dropbox.com/scl/fi/8i5lxutoecayjk3hfhisk/Lechner_Die-Abenteuer-des-Odysseus_9783742418708.zip?rlkey=uu01pkndgvr1e42vaczeq97c6&amp;st=krdkpugl&amp;dl=0" target="_blank" rel="noopener noreferrer">
+        <span aria-hidden="true">◖))</span><span><strong>Hörbuch</strong><small>Dropbox-Ressource öffnen</small></span>
+      </a>
+    </div>
+  </aside>
+
+  <main id="main">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">DIE VERLORENEN SPUREN DES ODYSSEUS</p>
+        <h1>Hilf Odysseus, den Heimweg zu finden!</h1>
+        <p>Folge den Orten der Geschichte. Rekonstruiere aus dem gelesenen Text Wetter,
+          Götterschicksale, Listen, Rachepläne und menschliche Entscheidungen. Drei Wege,
+          eine Geschichte – aber nicht in derselben Reihenfolge.</p>
+      </div>
+      <div class="progress-card">
+        <div class="ring" id="progressRing"><strong id="progressPercent">0%</strong></div>
+        <div><span class="muted">Rekonstruiert</span><br><strong id="progressText">0 von 13 Stationen</strong></div>
+      </div>
+    </section>
+
+    <section id="view" tabindex="-1"></section>
+  </main>
+
+  <dialog id="stationDialog" aria-labelledby="dialogTitle">
+    <button class="dialog-close" aria-label="Station schliessen">×</button>
+    <div id="stationContent"></div>
+  </dialog>
+
+  <footer>
+    <span>Lokaler Spielstand · Keine Anmeldung</span>
+    <button id="resetButton">Fortschritt neu starten</button>
+  </footer>
+  <script src="data.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
