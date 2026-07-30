@@ -30,6 +30,7 @@
     <button class="score wallet-button" data-view="economy" aria-live="polite" aria-label="Eulen-Konto öffnen">
       <span id="owlScore">0</span> Eulen <span aria-hidden="true">›</span>
     </button>
+    <button class="profile-button" id="profileButton" type="button">Anmelden</button>
   </header>
 
   <aside class="resource-bar" aria-label="Lektüre-Ressourcen">
@@ -70,8 +71,35 @@
     <div id="stationContent"></div>
   </dialog>
 
+  <dialog id="loginDialog" class="account-dialog" aria-labelledby="loginTitle">
+    <div class="account-box">
+      <button class="dialog-close account-close" aria-label="Anmeldung schliessen">×</button>
+      <p class="eyebrow">SCHÜLERBEREICH</p>
+      <h2 id="loginTitle">Deine Reise sichern</h2>
+      <p>Gib deinen Vor- und Nachnamen immer gleich ein. Dein Spielstand bleibt auf diesem Gerät gespeichert.</p>
+      <form id="studentLoginForm">
+        <label>Vorname<input id="studentFirstName" autocomplete="given-name" required maxlength="50"></label>
+        <label>Nachname<input id="studentLastName" autocomplete="family-name" required maxlength="50"></label>
+        <button class="primary" type="submit">Eintragen und weiterspielen</button>
+      </form>
+      <div id="activeStudentPanel" hidden></div>
+      <hr>
+      <button class="hint-btn" id="openTeacherButton" type="button">Lehrerbereich öffnen</button>
+    </div>
+  </dialog>
+
+  <dialog id="teacherDialog" class="account-dialog" aria-labelledby="teacherTitle">
+    <div class="account-box teacher-box">
+      <button class="dialog-close teacher-close" aria-label="Lehrerbereich schliessen">×</button>
+      <p class="eyebrow">LEHRERBEREICH</p>
+      <h2 id="teacherTitle">Spielstände verfolgen</h2>
+      <div id="teacherGate"></div>
+      <div id="teacherDashboard" hidden></div>
+    </div>
+  </dialog>
+
   <footer>
-    <span>Lokaler Spielstand · Keine Anmeldung</span>
+    <span id="storageStatus">Spielstand wird lokal auf diesem Gerät gespeichert.</span>
     <button id="resetButton">Fortschritt neu starten</button>
   </footer>
   <script src="data.js"></script>
