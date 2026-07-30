@@ -1,6 +1,7 @@
 (() => {
   const D = window.ODYSSEUS_DATA;
   const KEY = "athenes-archiv-v1";
+  const API = "https://odysseus-foxtrail-class.patrick-fischer.workers.dev";
   const USERS_KEY = "athenes-schueler-v1";
   const ACTIVE_KEY = "athenes-aktives-profil-v1";
   const TEACHER_PIN_KEY = "athenes-lehrer-pin-v1";
@@ -12,6 +13,8 @@
   };
   let activeStudentId = localStorage.getItem(ACTIVE_KEY) || "";
   let state = load();
+  let cloudSaveTimer = null;
+  let teacherStudents = [];
   let currentStation = null;
   let taskIndex = 0;
   let order = [];
@@ -63,7 +66,25 @@
       const users=getUsers(), profile=users[activeStudentId];
       if(profile){users[activeStudentId]={...profile,state,updatedAt:Date.now()};setUsers(users)}
     }else localStorage.setItem(KEY,JSON.stringify(state));
+    scheduleCloudSave();
     updateHeader();
+  }
+  function scheduleCloudSave(){
+    const profile=getUsers()[activeStudentId];
+    if(!profile?.cloudToken)return;
+    window.clearTimeout(cloudSaveTimer);
+    cloudSaveTimer=window.setTimeout(async()=>{
+      try{
+        const response=await fetch(`${API}/student`,{method:"PUT",headers:{"Content-Type":"application/json","X-Student-Token":profile.cloudToken},body:JSON.stringify({state})});
+        document.querySelector("#storageStatus").dataset.sync=response.ok?"ok":"error";
+        document.querySelector("#storageStatus").textContent=response.ok
+          ?`Angemeldet: ${profile.first} ${profile.last} · Spielstand synchronisiert`
+          :`Angemeldet: ${profile.first} ${profile.last} · lokal gespeichert, Synchronisation ausstehend`;
+      }catch{
+        document.querySelector("#storageStatus").dataset.sync="error";
+        document.querySelector("#storageStatus").textContent=`Angemeldet: ${profile.first} ${profile.last} · offline lokal gespeichert`;
+      }
+    },700);
   }
   function esc(s){ const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
   function normal(s){ return String(s).trim().toLocaleLowerCase("de-CH").normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[^a-z0-9]/g,""); }
@@ -113,72 +134,76 @@
     document.querySelector("#continueStudent")?.addEventListener("click",()=>loginDialog.close());
     document.querySelector("#logoutStudent")?.addEventListener("click",logoutStudent);
   }
-  function loginStudent(first,last){
+  async function loginStudent(first,last,classCode){
     first=first.trim();last=last.trim();if(!first||!last)return;
     const id=studentId(first,last), users=getUsers();
     if(!users[id]){
       const legacy=Object.keys(users).length===0?JSON.parse(localStorage.getItem(KEY)||"null"):null;
       users[id]={first,last,createdAt:Date.now(),updatedAt:Date.now(),state:legacy?{...initial,...legacy}:{...initial}};
     }
-    setUsers(users);activeStudentId=id;localStorage.setItem(ACTIVE_KEY,id);
-    state=load();save();loginDialog.close();showTrail();
+    const feedback=document.querySelector("#studentLoginFeedback");
+    try{
+      if(!users[id].cloudToken){
+        const response=await fetch(`${API}/register`,{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({first,last,classCode:classCode.trim(),state:users[id].state})});
+        const result=await response.json();
+        if(!response.ok)throw new Error(result.error||"Anmeldung nicht möglich.");
+        users[id].cloudToken=result.token;users[id].cloudId=result.id;
+      }else{
+        const response=await fetch(`${API}/student`,{headers:{"X-Student-Token":users[id].cloudToken}});
+        if(response.ok){
+          const result=await response.json();
+          if((result.updatedAt||0)>(users[id].updatedAt||0))users[id].state={...initial,...result.state};
+        }
+      }
+      setUsers(users);activeStudentId=id;localStorage.setItem(ACTIVE_KEY,id);
+      state=load();save();loginDialog.close();showTrail();
+    }catch(error){
+      feedback.innerHTML=`<div class="feedback bad">${esc(error.message)} Prüfe Klassencode und Internetverbindung.</div>`;
+    }
   }
   function logoutStudent(){
     save();activeStudentId="";localStorage.removeItem(ACTIVE_KEY);state={...initial};
     loginDialog.close();updateHeader();showTrail();window.setTimeout(openLogin,50);
   }
-  function teacherRows(){
-    return Object.entries(getUsers()).sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0)).map(([id,p])=>{
+  function teacherRows(students=teacherStudents){
+    return students.sort((a,b)=>a.last.localeCompare(b.last,"de")).map(p=>{
       const s={...initial,...p.state}, percent=Math.round((s.completed?.length||0)/D.stations.length*100);
       return `<tr><td><strong>${esc(p.last)}, ${esc(p.first)}</strong></td><td>${s.completed?.length||0}/${D.stations.length}</td>
         <td>${percent}%</td><td>${s.score||0}</td><td>${s.writing?.draftComplete?"abgeschlossen":`${countWords(s.writing?.fields?.draft||"")} Wörter`}</td>
-        <td>${new Date(p.updatedAt||p.createdAt).toLocaleString("de-CH")}</td>
-        <td><button class="teacher-delete" data-delete-student="${esc(id)}" type="button">Löschen</button></td></tr>`;
+        <td>${new Date(p.updatedAt||p.createdAt).toLocaleString("de-CH")}</td></tr>`;
     }).join("");
   }
-  function showTeacherDashboard(){
+  function showTeacherDashboard(students){
+    teacherStudents=students;
     const dashboard=document.querySelector("#teacherDashboard"), gate=document.querySelector("#teacherGate");
     gate.hidden=true;dashboard.hidden=false;
-    dashboard.innerHTML=`<p class="local-warning"><strong>Hinweis:</strong> Diese Übersicht enthält die Profile dieses Browsers. Für mehrere Geräte Daten jeweils exportieren und hier importieren.</p>
-      <div class="teacher-actions"><button class="primary" id="exportClass" type="button">Klassendaten exportieren</button>
-      <label class="hint-btn import-label">Klassendaten importieren<input id="importClass" type="file" accept="application/json" hidden></label></div>
-      <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>Name</th><th>Stationen</th><th>Fortschritt</th><th>Eulen</th><th>Schreibprojekt</th><th>Zuletzt aktiv</th><th></th></tr></thead>
-      <tbody>${teacherRows()||'<tr><td colspan="7">Noch keine Schülerprofile auf diesem Gerät.</td></tr>'}</tbody></table></div>`;
+    dashboard.innerHTML=`<p class="local-warning"><strong>Zentrale Klassenübersicht:</strong> ${students.length} Profile · von allen verbundenen Schülergeräten.</p>
+      <div class="teacher-actions"><button class="primary" id="exportClass" type="button">Klassendaten exportieren</button></div>
+      <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>Name</th><th>Stationen</th><th>Fortschritt</th><th>Eulen</th><th>Schreibprojekt</th><th>Zuletzt aktiv</th></tr></thead>
+      <tbody>${teacherRows(students)||'<tr><td colspan="6">Noch keine Schülerprofile eingetragen.</td></tr>'}</tbody></table></div>`;
     document.querySelector("#exportClass").addEventListener("click",exportClass);
-    document.querySelector("#importClass").addEventListener("change",importClass);
-    document.querySelectorAll("[data-delete-student]").forEach(button=>button.addEventListener("click",()=>{
-      const users=getUsers(), id=button.dataset.deleteStudent, p=users[id];
-      if(p&&confirm(`Spielstand von ${p.first} ${p.last} wirklich löschen?`)){
-        delete users[id];setUsers(users);if(activeStudentId===id){activeStudentId="";localStorage.removeItem(ACTIVE_KEY)}
-        showTeacherDashboard();updateHeader();
-      }
-    }));
   }
   function openTeacher(){
     loginDialog.close();teacherDialog.showModal();
-    const saved=localStorage.getItem(TEACHER_PIN_KEY), gate=document.querySelector("#teacherGate");
+    const gate=document.querySelector("#teacherGate");
     document.querySelector("#teacherDashboard").hidden=true;gate.hidden=false;
-    gate.innerHTML=`<form id="teacherPinForm"><p>${saved?"Lehrer-PIN eingeben.":"Beim ersten Öffnen einen persönlichen Lehrer-PIN festlegen."}</p>
+    gate.innerHTML=`<form id="teacherPinForm"><p>Lehrer-PIN eingeben, um die zentralen Spielstände zu laden.</p>
       <label>Lehrer-PIN<input id="teacherPin" type="password" required minlength="4" autocomplete="current-password"></label>
-      <button class="primary" type="submit">${saved?"Öffnen":"PIN festlegen"}</button><div id="teacherPinFeedback"></div></form>`;
-    document.querySelector("#teacherPinForm").addEventListener("submit",event=>{
+      <button class="primary" type="submit">Klassenübersicht laden</button><div id="teacherPinFeedback"></div></form>`;
+    document.querySelector("#teacherPinForm").addEventListener("submit",async event=>{
       event.preventDefault();const pin=document.querySelector("#teacherPin").value;
-      if(saved&&pin!==saved){document.querySelector("#teacherPinFeedback").innerHTML='<div class="feedback bad">PIN stimmt nicht.</div>';return}
-      if(!saved)localStorage.setItem(TEACHER_PIN_KEY,pin);showTeacherDashboard();
+      try{
+        const response=await fetch(`${API}/teacher/students`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin})});
+        const result=await response.json();if(!response.ok)throw new Error(result.error||"Zugriff nicht möglich.");
+        showTeacherDashboard(result.students||[]);
+      }catch(error){document.querySelector("#teacherPinFeedback").innerHTML=`<div class="feedback bad">${esc(error.message)}</div>`}
     });
   }
   function exportClass(){
-    const data={version:1,exportedAt:new Date().toISOString(),students:getUsers()};
+    const data={version:2,exportedAt:new Date().toISOString(),students:teacherStudents};
     const link=document.createElement("a");link.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
     link.download=`odysseus-klasse-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(link.href);
-  }
-  function importClass(event){
-    const file=event.target.files?.[0];if(!file)return;
-    const reader=new FileReader();reader.onload=()=>{
-      try{
-        const incoming=JSON.parse(reader.result), merged={...getUsers(),...(incoming.students||{})};setUsers(merged);showTeacherDashboard();
-      }catch{alert("Diese Datei enthält keine gültigen Klassendaten.")}
-    };reader.readAsText(file);
   }
   function head(title,sub=""){
     return `<div class="section-head"><div><p class="eyebrow">${esc(sub)}</p><h2>${esc(title)}</h2></div>
@@ -536,7 +561,7 @@
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
   document.querySelector("#profileButton").addEventListener("click",openLogin);
   document.querySelector("#studentLoginForm").addEventListener("submit",event=>{
-    event.preventDefault();loginStudent(document.querySelector("#studentFirstName").value,document.querySelector("#studentLastName").value);
+    event.preventDefault();loginStudent(document.querySelector("#studentFirstName").value,document.querySelector("#studentLastName").value,document.querySelector("#studentClassCode").value);
   });
   document.querySelector(".account-close").addEventListener("click",()=>loginDialog.close());
   document.querySelector(".teacher-close").addEventListener("click",()=>teacherDialog.close());

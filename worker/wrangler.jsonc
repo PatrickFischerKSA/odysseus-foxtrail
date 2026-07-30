@@ -1,0 +1,12 @@
+{
+  "name": "odysseus-foxtrail-class",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-30",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "odysseus-foxtrail-class",
+      "database_id": "ba1aab17-1acb-4558-8c87-33c6e9d2a851"
+    }
+  ]
+}

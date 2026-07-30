@@ -80,7 +80,9 @@
       <form id="studentLoginForm">
         <label>Vorname<input id="studentFirstName" autocomplete="given-name" required maxlength="50"></label>
         <label>Nachname<input id="studentLastName" autocomplete="family-name" required maxlength="50"></label>
+        <label>Klassencode<input id="studentClassCode" autocomplete="off" required maxlength="40" placeholder="Von der Lehrperson"></label>
         <button class="primary" type="submit">Eintragen und weiterspielen</button>
+        <div id="studentLoginFeedback"></div>
       </form>
       <div id="activeStudentPanel" hidden></div>
       <hr>
