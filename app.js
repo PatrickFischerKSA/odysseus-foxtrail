@@ -134,7 +134,7 @@
     document.querySelector("#continueStudent")?.addEventListener("click",()=>loginDialog.close());
     document.querySelector("#logoutStudent")?.addEventListener("click",logoutStudent);
   }
-  async function loginStudent(first,last,classCode){
+  async function loginStudent(first,last){
     first=first.trim();last=last.trim();if(!first||!last)return;
     const id=studentId(first,last), users=getUsers();
     if(!users[id]){
@@ -145,7 +145,7 @@
     try{
       if(!users[id].cloudToken){
         const response=await fetch(`${API}/register`,{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({first,last,classCode:classCode.trim(),state:users[id].state})});
+          body:JSON.stringify({first,last,state:users[id].state})});
         const result=await response.json();
         if(!response.ok)throw new Error(result.error||"Anmeldung nicht möglich.");
         users[id].cloudToken=result.token;users[id].cloudId=result.id;
@@ -159,7 +159,7 @@
       setUsers(users);activeStudentId=id;localStorage.setItem(ACTIVE_KEY,id);
       state=load();save();loginDialog.close();showTrail();
     }catch(error){
-      feedback.innerHTML=`<div class="feedback bad">${esc(error.message)} Prüfe Klassencode und Internetverbindung.</div>`;
+      feedback.innerHTML=`<div class="feedback bad">${esc(error.message)} Prüfe deine Internetverbindung.</div>`;
     }
   }
   function logoutStudent(){
@@ -561,7 +561,7 @@
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
   document.querySelector("#profileButton").addEventListener("click",openLogin);
   document.querySelector("#studentLoginForm").addEventListener("submit",event=>{
-    event.preventDefault();loginStudent(document.querySelector("#studentFirstName").value,document.querySelector("#studentLastName").value,document.querySelector("#studentClassCode").value);
+    event.preventDefault();loginStudent(document.querySelector("#studentFirstName").value,document.querySelector("#studentLastName").value);
   });
   document.querySelector(".account-close").addEventListener("click",()=>loginDialog.close());
   document.querySelector(".teacher-close").addEventListener("click",()=>teacherDialog.close());

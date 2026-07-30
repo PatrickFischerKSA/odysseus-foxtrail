@@ -45,7 +45,6 @@ export default {
         const body = await request.json();
         const first = cleanName(body.first);
         const last = cleanName(body.last);
-        if (body.classCode !== env.CLASS_CODE) return json(request, { error: "Klassencode stimmt nicht." }, 403);
         if (first.length < 2 || last.length < 2) return json(request, { error: "Vor- und Nachname fehlen." }, 400);
         const id = crypto.randomUUID();
         const token = `${crypto.randomUUID()}${crypto.randomUUID()}`;
