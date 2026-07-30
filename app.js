@@ -189,7 +189,7 @@
     const gate=document.querySelector("#teacherGate");
     document.querySelector("#teacherDashboard").hidden=true;gate.hidden=false;
     gate.innerHTML=`<form id="teacherPinForm"><p>Lehrer-PIN eingeben, um die zentralen Spielstände zu laden.</p>
-      <label>Lehrer-PIN<input id="teacherPin" type="password" required minlength="4" autocomplete="current-password"></label>
+      <label>Lehrer-PIN<input id="teacherPin" type="password" required minlength="3" autocomplete="current-password"></label>
       <button class="primary" type="submit">Klassenübersicht laden</button><div id="teacherPinFeedback"></div></form>`;
     document.querySelector("#teacherPinForm").addEventListener("submit",async event=>{
       event.preventDefault();const pin=document.querySelector("#teacherPin").value;
