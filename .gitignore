@@ -1,3 +1,5 @@
 dist/
+.wrangler/
+worker/.wrangler/
 .DS_Store
 *.tar.gz
