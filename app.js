@@ -1,0 +1,439 @@
+(() => {
+  const D = window.ODYSSEUS_DATA;
+  const KEY = "athenes-archiv-v1";
+  const initial = {
+    completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
+    rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
+    streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
+    writing:{fields:{},completed:[],revision:[],draftComplete:false},final:false
+  };
+  let state = load();
+  let currentStation = null;
+  let taskIndex = 0;
+  let order = [];
+  const view = document.querySelector("#view");
+  const dialog = document.querySelector("#stationDialog");
+
+  function load(){
+    try { return {...initial,...JSON.parse(localStorage.getItem(KEY)||"{}")}; }
+    catch { return {...initial}; }
+  }
+  function record(amount,label,kind=amount>=0?"reward":"cost"){
+    state.score=state.score+amount;
+    state.transactions=[{amount,label,kind,time:Date.now()},...(state.transactions||[])].slice(0,60);
+  }
+  function deriveAchievements(){
+    const earned=new Set(state.achievements);
+    const clean=state.completed.filter(id=>{
+      const s=D.stations.find(x=>x.id===id);
+      return s&&s.tasks.every(q=>(state.hints[q.id]||0)<3);
+    });
+    if(clean.length>=3)earned.add("mind");
+    for(const key of ["ithaka","gods"]){
+      const ids=D.stations.filter(s=>s.thread===key).map(s=>s.id);
+      if(ids.length&&ids.every(id=>state.completed.includes(id)))earned.add(key);
+    }
+    if(state.taskResults.f3)earned.add("time");
+    state.achievements=[...earned];
+    state.rewardedAchievements=state.rewardedAchievements||[];
+    state.achievements.forEach(id=>{
+      if(!state.rewardedAchievements.includes(id)){
+        const achievement=D.achievements.find(a=>a.id===id);
+        state.rewardedAchievements.push(id);
+        record(10,`Abzeichen: ${achievement?.name||id}`);
+      }
+    });
+  }
+  function save(){ deriveAchievements(); localStorage.setItem(KEY,JSON.stringify(state)); updateHeader(); }
+  function esc(s){ const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
+  function normal(s){ return String(s).trim().toLocaleLowerCase("de-CH").normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[^a-z0-9]/g,""); }
+  const stopWords=new Set(["die","der","das","den","dem","des","ein","eine","einen","einer","und","oder","mit","von","vor","nach","wird","werden","sich","sein","seine","ihre","ihren","ihm","sie","er","ist","als","bei","zum","zur","auf","wegen","durch","gegen"]);
+  function words(s){return String(s).toLocaleLowerCase("de-CH").normalize("NFD").replace(/\p{Diacritic}/gu,"").match(/[a-z0-9]+/g)?.filter(w=>w.length>2&&!stopWords.has(w))||[]}
+  function openAnswerCorrect(q,value){
+    const entered=words(value), compact=normal(value);
+    if(!entered.length)return false;
+    if([q.answer,...(q.alternatives||[])].filter(x=>typeof x==="string").some(x=>normal(x)===compact))return true;
+    const containsIdea=idea=>{
+      const keys=words(idea);
+      if(!keys.length)return false;
+      const hits=keys.filter(k=>entered.some(e=>e===k||e.startsWith(k.slice(0,Math.max(4,k.length-2)))||k.startsWith(e.slice(0,Math.max(4,e.length-2))))).length;
+      return hits>=Math.max(1,Math.ceil(keys.length*.45));
+    };
+    if(Array.isArray(q.answer))return q.answer.every(containsIdea);
+    if(q.answer&&typeof q.answer==="object")return Object.entries(q.answer).every(([a,b])=>containsIdea(a)&&containsIdea(b));
+    return containsIdea(q.answer);
+  }
+  function unlocked(i){ return i===0 || state.completed.includes(D.stations[i-1].id); }
+  function completeCount(){ return state.completed.length; }
+  function updateHeader(){
+    const p=Math.round(completeCount()/D.stations.length*100);
+    document.querySelector("#owlScore").textContent=state.score;
+    document.querySelector("#progressPercent").textContent=p+"%";
+    document.querySelector("#progressText").textContent=`${completeCount()} von ${D.stations.length} Stationen`;
+    document.querySelector("#progressRing").style.setProperty("--p",`${p*3.6}deg`);
+  }
+  function head(title,sub=""){
+    return `<div class="section-head"><div><p class="eyebrow">${esc(sub)}</p><h2>${esc(title)}</h2></div>
+      <div class="legend">${Object.entries(D.threads).map(([k,t])=>`<span><i style="background:${t.colour}"></i>${t.label}</span>`).join("")}</div></div>`;
+  }
+  function showTrail(){
+    view.innerHTML=head("Die zerrissene Spur","FOXTRAIL-KARTE")+`<div class="trail">${
+      D.stations.map((s,i)=>{
+        const done=state.completed.includes(s.id), open=unlocked(i), t=D.threads[s.thread];
+        return `<button class="station" style="--thread:${t.colour}" data-station="${s.id}" ${open?"":"disabled"}>
+          <span class="sigil">${s.symbol}</span><span class="num">SPUR ${String(i+1).padStart(2,"0")} · ${t.label}</span>
+          <h3>${esc(s.title)}</h3><p class="source">${open?"ORT · "+esc(s.place):""}</p><p>${open?esc(s.discover):"Diese Spur ist noch versiegelt."}</p>
+          <span class="state">${done?"✓ REKONSTRUIERT":open?"ÖFFNEN":"VERSCHLOSSEN"}</span></button>`;
+      }).join("")
+    }</div>${completeCount()===D.stations.length?renderFinal():""}`;
+    view.querySelectorAll("[data-station]").forEach(b=>b.addEventListener("click",()=>openStation(b.dataset.station)));
+  }
+  function showThreads(){
+    const counts={}; D.events.forEach(e=>counts[e.thread]=(counts[e.thread]||0)+1);
+    const journey=D.heroJourney;
+    view.innerHTML=head("Vier Ebenen derselben Geschichte","ERZÄHLSTRÄNGE")+`<div class="thread-grid">${
+      Object.entries(D.threads).map(([id,t])=>`<article class="thread-card" style="--thread:${t.colour}">
+        <span class="chip">${counts[id]||0} Ereignisse</span><h3>${t.label}</h3>
+        <p>${id==="odysseus"?"Irrfahrt, Gefährten, Kalypso, Phaiaken und Heimkehr":id==="telemachos"?"Aufbruch, Nachrichtensuche und Rückkehr des Sohns":id==="ithaka"?"Penelope, Freier, Loyalitäten und Wiederherstellung der Ordnung":"Hilfe, Widerstand, Prüfung und Friedensschluss"}</p></article>`).join("")
+    }</div><div class="panel" style="margin-top:1rem"><h3>Narrative Zeitleiste</h3><p class="muted">Links: tatsächliche Chronologie · rechts: Lechners Erzählposition</p><div class="timeline">${
+      [...D.events].sort((a,b)=>a.narrationIndex-b.narrationIndex).map(e=>`<div class="event ${e.narrativeMode}" style="--thread:${D.threads[e.thread].colour}">
+        <span>Zeit ${e.chronologyIndex}</span><strong>${esc(e.label)}</strong><span>Erzählung ${e.narrationIndex}<br>${e.narrativeMode}</span></div>`).join("")
+    }</div></div>
+    <section class="hero-journey">
+      <div class="section-head journey-head"><div><p class="eyebrow">ANALYSEMODELL</p><h2>${esc(journey.title)}</h2></div></div>
+      <div class="panel journey-intro"><p>${esc(journey.intro)}</p></div>
+      <div class="journey-lab panel"><div><p class="eyebrow">HELDENREISE-LERNLABOR</p><h3>${Object.keys(state.journeyResults||{}).length} von ${journey.tasks.length} Spuren gelöst</h3>
+        <p>Beantworte die offenen Fragen. Jede Lösung schaltet die zugehörigen Deutungen frei und bringt Eulen.</p></div>
+        <div class="journey-meter"><span style="width:${Object.keys(state.journeyResults||{}).length/journey.tasks.length*100}%"></span></div></div>
+      <div class="journey-questions">${journey.tasks.map((q,i)=>renderJourneyQuestion(q,i)).join("")}</div>
+      <div class="journey-path">${journey.phases.map((p,i)=>{
+        const unlocked=journey.tasks.some(q=>(state.journeyResults||{})[q.id]&&q.phaseIds.includes(p.id));
+        return `<article class="journey-step ${unlocked?"":"journey-locked"}" style="--thread:${D.threads[p.thread].colour}">
+        <div class="journey-number">${p.number}</div><div><span class="chip">${D.threads[p.thread].label}</span><h3>${esc(p.name)}</h3>
+        <p>${esc(p.events)}</p>${unlocked?`<strong>${esc(p.meaning)}</strong><small>${esc(p.chapters)}</small>`:`<div class="locked-meaning">Deutung durch eine Lernlabor-Frage freischalten</div>`}</div>${i<journey.phases.length-1?'<span class="journey-arrow" aria-hidden="true">→</span>':""}</article>`}).join("")}</div>
+      <div class="journey-bottom"><article class="panel"><p class="eyebrow">TELEMACHOS’ KLEINE HELDENREISE</p><ol>${
+        journey.telemachos.map(x=>`<li>${esc(x)}</li>`).join("")
+      }</ol></article><article class="panel caution-card"><p class="eyebrow">ACHTUNG: DREI ORDNUNGEN</p><p>${esc(journey.caution)}</p></article></div>
+    </section>`;
+    bindJourneyQuestions();
+  }
+  function renderJourneyQuestion(q,index){
+    const solved=(state.journeyResults||{})[q.id], hints=(state.journeyHints||{})[q.id]||0;
+    return `<article class="panel journey-question ${solved?"solved":""}"><p class="source">LERNLABOR ${index+1}</p><h3>${esc(q.title)}</h3><p>${esc(q.prompt)}</p>
+      ${solved?`<div class="feedback good"><strong>Gelöst.</strong> ${esc(q.feedback)}</div>`:`<textarea class="journey-answer" data-journey-answer="${q.id}" rows="4" placeholder="Begründe mit Ereignissen aus Lechners Text …"></textarea>
+      <div data-journey-feedback="${q.id}"></div><div class="actions"><button class="primary" data-check-journey="${q.id}">Antwort prüfen</button>
+      <button class="hint-btn" data-hint-journey="${q.id}">${hints>=q.hints.length?"Hinweis erneut ansehen":`Hinweis ${hints+1} · −${hints+1} Eulen`}</button></div>`}</article>`;
+  }
+  function bindJourneyQuestions(){
+    document.querySelectorAll("[data-check-journey]").forEach(button=>button.addEventListener("click",()=>{
+      const q=D.heroJourney.tasks.find(x=>x.id===button.dataset.checkJourney);
+      const input=document.querySelector(`[data-journey-answer="${q.id}"]`), feedback=document.querySelector(`[data-journey-feedback="${q.id}"]`);
+      if(openAnswerCorrect(q,input.value)){
+        state.journeyResults=state.journeyResults||{};state.journeyResults[q.id]=true;
+        const first=!((state.journeyAttempts||{})[q.id]>0), reward=first?12:8;
+        record(reward,`Heldenreise-Lernlabor: ${q.title}${first?" · Erstversuch":""}`);save();showThreads();
+      }else{
+        state.journeyAttempts=state.journeyAttempts||{};state.journeyAttempts[q.id]=(state.journeyAttempts[q.id]||0)+1;save();
+        feedback.innerHTML=`<div class="feedback bad"><strong>Noch nicht vollständig.</strong> Verbinde alle verlangten Teile mit konkreten Ereignissen.</div>`;
+      }
+    }));
+    document.querySelectorAll("[data-hint-journey]").forEach(button=>button.addEventListener("click",()=>{
+      const q=D.heroJourney.tasks.find(x=>x.id===button.dataset.hintJourney);
+      state.journeyHints=state.journeyHints||{};const opened=state.journeyHints[q.id]||0;
+      const index=Math.min(opened,q.hints.length-1), cost=opened>=q.hints.length?0:index+1;
+      if(opened<q.hints.length){state.journeyHints[q.id]=opened+1;record(-cost,`Heldenreise-Hinweis: ${q.title}`,"cost");save();}
+      document.querySelector(`[data-journey-feedback="${q.id}"]`).innerHTML=`<div class="feedback"><strong>Hinweis${cost?` · −${cost} Eulen`:""}:</strong> ${esc(q.hints[index])}</div>`;
+      if(opened<q.hints.length)button.textContent=opened+1>=q.hints.length?"Hinweis erneut ansehen":`Hinweis ${opened+2} · −${opened+2} Eulen`;
+    }));
+  }
+  function showRoute(){
+    view.innerHTML=head("Odysseus’ Welt im Mittelmeer","INTERAKTIVE REISEKARTE")+`
+      <div class="map-intro panel"><p><strong>So liest du die Karte:</strong> Troja, Ismaros, Ithaka, Pylos und Sparta sind geografisch
+      lokalisierbar. Die übrigen Punkte zeigen mögliche antike oder spätere Lokalisierungstraditionen,
+      nicht gesicherte Reiseziele. Öffne einen Marker für Textbezug und Quellenstatus.</p>
+      <div class="legend"><span><i class="map-dot certain"></i>lokalisierbar</span>
+      <span><i class="map-dot debated"></i>mythisch / umstritten</span>
+      <span class="route-key">— mögliche Rekonstruktionslinie</span></div></div>
+      <div id="leafletMap" class="route-map real-map" aria-label="Interaktive Mittelmeerkarte der Reiseorte"></div>
+      <p class="map-disclaimer">Die Linie ist eine didaktische Visualisierung, keine historisch gesicherte Route.
+      Kartendaten: OpenStreetMap-Mitwirkende.</p>`;
+    window.setTimeout(initRouteMap,0);
+  }
+  function initRouteMap(){
+    const target=document.querySelector("#leafletMap"); if(!target)return;
+    const points=[
+      {name:"Troja",lat:39.9575,lng:26.2389,certain:true,chapter:"Kapitel 1 · PDF S. 5",note:"Archäologisch lokalisierbarer Ausgangspunkt der Heimkehr."},
+      {name:"Ismaros / Kikonen",lat:40.94,lng:25.57,certain:true,chapter:"Kapitel 1 · PDF S. 8–9",note:"Antiker Ort an der thrakischen Küste."},
+      {name:"Lotophagen",lat:33.81,lng:10.85,certain:false,chapter:"Kapitel 1 · PDF S. 12–14",note:"Djerba ist eine häufige, aber nicht beweisbare Lokalisierungstradition."},
+      {name:"Kyklopen",lat:37.73,lng:15.0,certain:false,chapter:"Kapitel 1 · PDF S. 18–29",note:"Ostsizilien wird traditionell mit den Kyklopen verbunden; der Ort bleibt mythisch."},
+      {name:"Aiolia",lat:38.47,lng:14.95,certain:false,chapter:"Kapitel 2 · PDF S. 30–33",note:"Die Liparischen Inseln sind eine mögliche spätere Zuordnung zu Aiolos."},
+      {name:"Laistrygonen",lat:37.05,lng:15.29,certain:false,chapter:"Kapitel 2 · PDF S. 33–36",note:"Mehrere Lokalisierungen wurden vorgeschlagen; keine ist gesichert."},
+      {name:"Aia / Kirke",lat:41.23,lng:13.05,certain:false,chapter:"Kapitel 2–3 · PDF S. 35–64",note:"Monte Circeo bewahrt eine Kirke-Tradition, ist aber kein gesicherter Romanort."},
+      {name:"Unterwelt / Kimmerier",lat:40.85,lng:14.05,certain:false,chapter:"Kapitel 2 · PDF S. 43–57",note:"Cumae wurde später mit Unterweltsvorstellungen verbunden; Lechners Ort ist mythisch."},
+      {name:"Sirenen",lat:40.57,lng:14.33,certain:false,chapter:"Kapitel 3 · PDF S. 58–64",note:"Die Küste bei Sorrent ist eine traditionelle, nicht eindeutige Zuordnung."},
+      {name:"Skylla und Charybdis",lat:38.24,lng:15.63,certain:false,chapter:"Kapitel 3 · PDF S. 59–67",note:"Die Strasse von Messina gilt als plausible geografische Deutung der Meerenge."},
+      {name:"Thrinakia / Helios",lat:37.5,lng:14.0,certain:false,chapter:"Kapitel 3 · PDF S. 67–73",note:"Oft mit Sizilien verbunden, im Text jedoch mythisch und nicht eindeutig lokalisierbar."},
+      {name:"Ogygia / Kalypso",lat:36.05,lng:14.25,certain:false,chapter:"Kapitel 3 und 6 · PDF S. 75–83, 128–130",note:"Gozo/Malta ist eine von mehreren umstrittenen Traditionen."},
+      {name:"Scheria / Phaiaken",lat:39.62,lng:19.92,certain:false,chapter:"Kapitel 6 · PDF S. 133–154",note:"Häufig mit Korfu verbunden; die Gleichsetzung ist nicht gesichert."},
+      {name:"Ithaka",lat:38.43,lng:20.68,certain:true,chapter:"Kapitel 4, 7–11",note:"Reale Insel und Ziel der Heimkehr; Einzelheiten der epischen Topografie bleiben diskutiert."},
+      {name:"Pylos",lat:36.91,lng:21.70,certain:true,chapter:"Kapitel 5 · PDF S. 103–110",note:"Realer Ort von Telemachos’ Nachrichtensuche bei Nestor."},
+      {name:"Sparta",lat:37.07,lng:22.43,certain:true,chapter:"Kapitel 5 · PDF S. 111–121",note:"Realer Ort von Telemachos’ Besuch bei Menelaos und Helena."}
+    ];
+    if(!window.L){
+      target.innerHTML=`<div class="map-fallback"><h3>Die Onlinekarte konnte nicht geladen werden.</h3>
+        <p>Für die Kartenkacheln ist eine Internetverbindung erforderlich.</p>
+        <div>${points.map(p=>`<span class="chip">${esc(p.name)} · ${p.certain?"lokalisierbar":"umstritten"}</span>`).join("")}</div></div>`;
+      return;
+    }
+    const map=L.map(target,{scrollWheelZoom:false}).setView([38.2,18.2],5);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      maxZoom:12,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
+    }).addTo(map);
+    const routePoints=points.slice(0,14).map(p=>[p.lat,p.lng]);
+    L.polyline(routePoints,{color:"#d9a441",weight:3,opacity:.82,dashArray:"8 8"}).addTo(map);
+    points.forEach(p=>{
+      const marker=L.circleMarker([p.lat,p.lng],{
+        radius:p.certain?8:7,color:p.certain?"#49b6c8":"#d9a441",
+        weight:3,fillColor:p.certain?"#49b6c8":"#132f3d",fillOpacity:p.certain?.9:.65,
+        dashArray:p.certain?null:"4 3"
+      }).addTo(map);
+      marker.bindPopup(`<strong>${esc(p.name)}</strong><br><small>${esc(p.certain?"geografisch lokalisierbar":"mythisch oder umstritten")}</small>
+        <p>${esc(p.note)}</p><span>Kapitel- und Seitenbezug wird erst nach der zugehörigen Stationslösung sichtbar.</span>`);
+    });
+    map.fitBounds(L.latLngBounds(points.map(p=>[p.lat,p.lng])),{padding:[24,24]});
+    window.setTimeout(()=>map.invalidateSize({pan:false}),250);
+  }
+  function showCharacters(){
+    const n=Math.min(D.characters.length,4+completeCount()*2);
+    view.innerHTML=head("Freischaltbares Figurenarchiv",`${n} VON ${D.characters.length} KARTEN SICHTBAR`)+`<div class="character-grid">${
+      D.characters.map((c,i)=>i<n?`<article class="character-card" style="--thread:${i<3?D.threads[["odysseus","ithaka","telemachos"][i]].colour:"var(--bronze)"}">
+        <span class="chip">${c.kind}</span><span class="chip">${c.status}</span><h3>${c.name}</h3>
+        <p><strong>Rolle:</strong> ${esc(c.role)}<br><strong>Ziel:</strong> ${esc(c.goal)}<br><strong>Schlüsselhandlung:</strong> ${esc(c.action)}</p>
+        <span class="chip">${c.symbol}</span><span class="chip">Quelle nach Stationslösung</span></article>`
+        :`<article class="character-card locked"><h3>Versiegelte Karte</h3><p>Löse weitere Stationen, um diese Figur zu identifizieren.</p></article>`).join("")
+    }</div>`;
+  }
+  function showClues(){
+    deriveAchievements();
+    view.innerHTML=head("Gesammelte Indizien","ATHENES ARCHIV")+`<div class="clue-grid">${
+      D.stations.map((s,i)=>state.completed.includes(s.id)?`<article class="clue"><span class="sigil">${s.symbol}</span><h3>${esc(s.reward)}</h3><p>${esc(s.title)} · Kapitel ${s.chapter.join(", ")}, PDF S. ${s.pageRef}</p></article>`
+      :`<article class="clue" style="opacity:.35"><h3>Fragment ${i+1}</h3><p>Noch nicht rekonstruiert</p></article>`).join("")
+    }</div><div class="panel" style="margin-top:1rem"><h3>Abzeichen</h3><div class="clue-grid">${
+      D.achievements.map(a=>`<article class="clue" style="opacity:${state.achievements.includes(a.id)?1:.35}">
+        <span class="sigil">${state.achievements.includes(a.id)?"✦":"◇"}</span><h3>${a.name}</h3><p>${a.rule}</p></article>`).join("")
+    }</div></div>${completeCount()===D.stations.length?renderFinal():""}`;
+    bindFinal();
+  }
+  function showEconomy(){
+    const costs=[["Erster Denkhinweis","−1"],["Hinweis zu Figur, Ort oder Strang","−2"],["Kapitel- und Seitenorientierung","−3"]];
+    const rewards=[["Richtige Textspur","＋8"],["Beim ersten Versuch","＋4 Bonus"],["Ohne Hinweis","＋2 Bonus"],["Dreierserie beim ersten Versuch","＋5"],["Station abgeschlossen","＋12"],["Neues Abzeichen","＋10"],["Schlussrätsel","＋30"]];
+    view.innerHTML=head("Athenes Eulen-Konto","SPIELPUNKTE · KEIN ECHTES GELD")+`<div class="economy-grid">
+      <section class="panel balance-panel"><p class="eyebrow">AKTUELLER STAND</p><strong class="big-balance">${state.score}</strong><span>Athenes Eulen</span>
+        <p>Die Eulen zeigen Ausdauer, genaue Textarbeit und klugen Umgang mit Hinweisen. Sie haben keinerlei Geldwert.</p>
+        <div class="streak">Aktuelle Erstversuch-Serie: <strong>${state.streak||0}</strong> · Beste Serie: <strong>${state.bestStreak||0}</strong></div></section>
+      <section class="panel"><h3>Hinweiskosten</h3><div class="tariff-list">${costs.map(([a,b])=>`<div><span>${a}</span><strong class="cost">${b}</strong></div>`).join("")}</div>
+        <p class="muted">Ein bereits geöffneter Hinweis kostet beim erneuten Ansehen nichts. Auch bei null Eulen bleiben alle Aufgaben lösbar.</p></section>
+      <section class="panel"><h3>Belohnungen</h3><div class="tariff-list">${rewards.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("")}</div></section>
+      <section class="panel ledger"><h3>Letzte Buchungen</h3>${(state.transactions||[]).length?`<div class="ledger-list">${state.transactions.map(t=>`<div>
+        <span>${esc(t.label)}</span><strong class="${t.amount<0?"cost":""}">${t.amount>0?"+":""}${t.amount}</strong></div>`).join("")}</div>`:"<p>Noch keine Buchungen.</p>"}</section>
+    </div>`;
+  }
+  function showWriting(){
+    const p=D.writingProject;
+    state.writing=state.writing||{fields:{},completed:[],revision:[],draftComplete:false};
+    state.writing.revision=state.writing.revision||[];
+    const completed=state.writing.completed||[], allPlans=p.stages.every(s=>completed.includes(s.id));
+    view.innerHTML=head(p.title,"KREATIVES ABSCHLUSSPROJEKT")+`<section class="writing-hero panel">
+      <div><p class="eyebrow">ENTWERFEN · KONZIPIEREN · DURCHFÜHREN</p><h2>${esc(p.title)}</h2><p>${esc(p.intro)}</p></div>
+      <div class="writing-progress"><strong>${completed.length}/${p.stages.length}</strong><span>Planungsschritte</span></div></section>
+      <section class="panel writing-principles"><h3>Leitplanken für eine glaubwürdige Sportgeschichte</h3><ul>${p.principles.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>
+      <div class="writing-stages">${p.stages.map((s,i)=>{
+        const unlocked=i===0||completed.includes(p.stages[i-1].id), done=completed.includes(s.id), value=state.writing.fields[s.id]||"";
+        return `<article class="panel writing-stage ${unlocked?"":"writing-locked"} ${done?"done":""}">
+          <div class="writing-stage-head"><span>${s.number}</span><div><p class="source">${done?"ABGESCHLOSSEN":unlocked?"IN ARBEIT":"NOCH GESPERRT"}</p><h3>${esc(s.title)}</h3></div></div>
+          ${unlocked?`<p>${esc(s.prompt)}</p><div class="prompt-grid">${s.questions.map(q=>`<span>${esc(q)}</span>`).join("")}</div>
+          <label for="write-${s.id}">Planungsnotizen</label><textarea id="write-${s.id}" data-writing-field="${s.id}" rows="8" placeholder="Entwickle diesen Baustein mit eigenen Ideen …">${esc(value)}</textarea>
+          <div class="writing-actions"><span data-count="${s.id}">${value.length}/${s.min} Zeichen Mindestumfang</span>
+          <button class="primary" data-complete-writing="${s.id}" ${done?"disabled":""}>${done?"Abgeschlossen · +10 Eulen":"Schritt abschliessen · +10 Eulen"}</button></div>
+          <div data-writing-feedback="${s.id}"></div>`:`<p>Schliesse zuerst «${esc(p.stages[i-1].title)}» ab.</p>`}</article>`;
+      }).join("")}</div>
+      <section class="panel draft-studio ${allPlans?"":"writing-locked"}"><p class="eyebrow">PHASE 07 · DURCHFÜHRUNG</p><h2>${esc(p.draft.title)}</h2>
+        ${allPlans?`<p>${esc(p.draft.prompt)}</p><div class="draft-toolbar"><span>Zielumfang: ${p.draft.target}</span><strong id="draftWordCount">${countWords(state.writing.fields.draft||"")} Wörter</strong></div>
+        <textarea data-writing-field="draft" class="draft-area" rows="28" placeholder="Beginne mit einer konkreten Szene …">${esc(state.writing.fields.draft||"")}</textarea>
+        <div class="writing-actions"><button class="primary" id="completeDraft" ${state.writing.draftComplete?"disabled":""}>${state.writing.draftComplete?"Erzählung abgeschlossen · +25 Eulen":"Erzählung abschliessen · +25 Eulen"}</button>
+        <button class="hint-btn" id="exportWriting">Projekt als Textdatei exportieren</button></div><div id="draftFeedback"></div>`:`<p>Die Schreibwerkstatt wird nach allen sechs Planungsschritten freigeschaltet.</p>`}</section>
+      <section class="panel revision-check"><p class="eyebrow">ÜBERARBEITUNG</p><h2>Redaktionskonferenz</h2><div class="revision-grid">${p.revision.map((x,i)=>`<label><input type="checkbox" data-revision="${i}" ${state.writing.revision.includes(i)?"checked":""}> <span>${esc(x)}</span></label>`).join("")}</div></section>`;
+    bindWriting();
+  }
+  function countWords(text){return String(text).trim()?String(text).trim().split(/\s+/).length:0}
+  function bindWriting(){
+    document.querySelectorAll("[data-writing-field]").forEach(area=>area.addEventListener("input",()=>{
+      state.writing.fields[area.dataset.writingField]=area.value;save();
+      const count=document.querySelector(`[data-count="${area.dataset.writingField}"]`);
+      if(count){const stage=D.writingProject.stages.find(s=>s.id===area.dataset.writingField);count.textContent=`${area.value.length}/${stage.min} Zeichen Mindestumfang`;}
+      if(area.dataset.writingField==="draft")document.querySelector("#draftWordCount").textContent=`${countWords(area.value)} Wörter`;
+    }));
+    document.querySelectorAll("[data-complete-writing]").forEach(button=>button.addEventListener("click",()=>{
+      const stage=D.writingProject.stages.find(s=>s.id===button.dataset.completeWriting), value=state.writing.fields[stage.id]||"";
+      const feedback=document.querySelector(`[data-writing-feedback="${stage.id}"]`);
+      if(value.trim().length<stage.min){feedback.innerHTML=`<div class="feedback bad">Entwickle den Baustein noch genauer: mindestens ${stage.min} Zeichen.</div>`;return;}
+      if(!state.writing.completed.includes(stage.id)){state.writing.completed.push(stage.id);record(10,`Schreibprojekt: ${stage.title}`);save();showWriting();}
+    }));
+    document.querySelector("#completeDraft")?.addEventListener("click",()=>{
+      const words=countWords(state.writing.fields.draft||"");
+      if(words<D.writingProject.draft.min){document.querySelector("#draftFeedback").innerHTML=`<div class="feedback bad">Der Entwurf umfasst ${words} Wörter. Für eine ausgearbeitete Heldenreise werden mindestens ${D.writingProject.draft.min} Wörter benötigt.</div>`;return;}
+      if(state.writing.revision.length<D.writingProject.revision.length){document.querySelector("#draftFeedback").innerHTML=`<div class="feedback bad">Führe vor dem Abschluss die vollständige Redaktionskonferenz durch und bestätige alle Überarbeitungsschritte.</div>`;return;}
+      if(!state.writing.draftComplete){state.writing.draftComplete=true;record(25,"Kreatives Schreibprojekt abgeschlossen");save();showWriting();}
+    });
+    document.querySelectorAll("[data-revision]").forEach(box=>box.addEventListener("change",()=>{
+      const id=+box.dataset.revision;
+      if(box.checked&&!state.writing.revision.includes(id))state.writing.revision.push(id);
+      if(!box.checked)state.writing.revision=state.writing.revision.filter(x=>x!==id);
+      save();
+    }));
+    document.querySelector("#exportWriting")?.addEventListener("click",exportWriting);
+  }
+  function exportWriting(){
+    const p=D.writingProject, sections=p.stages.map(s=>`${s.number} ${s.title}\n${state.writing.fields[s.id]||""}`).join("\n\n");
+    const content=`${p.title}\n\nPLANUNG\n\n${sections}\n\nERZÄHLUNG\n\n${state.writing.fields.draft||""}`;
+    const link=document.createElement("a");link.href=URL.createObjectURL(new Blob([content],{type:"text/plain;charset=utf-8"}));
+    link.download="heldenreise-eines-sportlers.txt";link.click();URL.revokeObjectURL(link.href);
+  }
+  function showMedia(){
+    const m=D.mediaResource;
+    view.innerHTML=head(m.title,"ERGÄNZENDE MULTIMEDIA-SPUR")+`<div class="media-layout">
+      <section class="panel media-player">${m.videos.map((video, index) => `<div class="video-part">
+        <p class="eyebrow">${esc(video.label)}</p>
+        <video controls preload="metadata" data-video-part="${index}">
+          <source src="${video.src}" type="video/mp4">Dein Browser kann dieses Video nicht wiedergeben.
+        </video>
+      </div>`).join("")}<div class="media-meta"><span class="chip">${esc(m.sourceType)}</span>
+        ${m.themes.map(x=>`<span class="chip">${esc(x)}</span>`).join("")}
+        <p class="feedback"><strong>Quellenhinweis:</strong> ${esc(m.notice)}</p>
+        <a class="resource-link" href="${m.transcript}" target="_blank">Transkript als PDF öffnen ↗</a>
+      </div></section>
+      <section class="media-prompts">${m.prompts.map((p,i)=>`<article class="panel media-prompt">
+        <p class="source">VIDEO-SPUR ${i+1}</p><h3>${esc(p.title)}</h3><p>${esc(p.prompt)}</p>
+        <label for="${p.id}">Deine Beobachtungen</label>
+        <textarea id="${p.id}" data-media-note="${p.id}" rows="5" placeholder="Formuliere mit eigenen Worten …">${esc(state.mediaNotes[p.id]||"")}</textarea>
+        <details><summary>Auswertungshilfe</summary><p>${esc(p.guide)}</p></details></article>`).join("")}</section>
+    </div>`;
+    view.querySelectorAll("[data-media-note]").forEach(x=>x.addEventListener("input",()=>{
+      state.mediaNotes[x.dataset.mediaNote]=x.value;save();
+    }));
+  }
+  function openStation(id){
+    currentStation=D.stations.find(s=>s.id===id); taskIndex=0; renderStation(); dialog.showModal();
+  }
+  function renderStation(){
+    const s=currentStation, done=state.completed.includes(s.id), t=D.threads[s.thread];
+    dialog.style.setProperty("--thread",t.colour);
+    document.querySelector("#stationContent").innerHTML=`<div class="station-content">
+      <p class="source">${t.label.toUpperCase()} · ${esc(s.place).toUpperCase()} · ${
+        done?`KAPITEL ${s.chapter.join(", ")} · PDF-SEITEN ${s.pageRef}`:"QUELLENANGABE NACH DER LÖSUNG"
+      }</p>
+      <h2 id="dialogTitle">${esc(s.title)}</h2><div class="mission"><div><strong>1 · SPUR ENTDECKEN</strong>${esc(s.discover)}</div>
+      <div><strong>2 · TEXT ERMITTELN</strong>${esc(s.read)}</div></div>
+      <div class="legend">${s.themes.map(x=>`<span class="chip">${esc(x)}</span>`).join("")}</div>
+      ${done?`<div class="summary"><div class="reward">${s.symbol}</div><h3>Diese Spur ist rekonstruiert.</h3><p>${esc(s.reward)}</p><button class="primary" data-replay>Aufgaben wiederholen</button></div>`:renderTask(s.tasks[taskIndex])}</div>`;
+    document.querySelector("[data-replay]")?.addEventListener("click",()=>{taskIndex=0; renderStationActive();});
+    bindTask();
+  }
+  function renderStationActive(){
+    const box=document.querySelector(".summary"); if(box){box.outerHTML=renderTask(currentStation.tasks[taskIndex]);bindTask();}
+  }
+  function renderTask(q){
+    order=q.type==="order"?[...q.options]:[];
+    const opened=state.hints[q.id]||0;
+    const nextCost=opened>=q.hints.length?0:([1,2,3][opened]||3);
+    const hintLabel=opened>=q.hints.length?"Letzten Hinweis ansehen":`Hinweis ${opened+1} öffnen · −${nextCost} Eulen`;
+    const answerHTML=q.type==="text"?`<input class="text-answer" id="textAnswer" autocomplete="off" aria-label="Antwort">`
+      :q.type==="order"?`<div class="answers sortable" id="orderList">${order.map((x,i)=>`<div class="answer"><span>${i+1}. ${esc(x)}</span><span><button data-up="${i}" aria-label="Nach oben">↑</button> <button data-down="${i}" aria-label="Nach unten">↓</button></span></div>`).join("")}</div>`
+      :"";
+    return `<div class="task-box"><span class="task-progress">3 · TEXTSPUR LÖSEN · ${esc(q.creativeMode).toUpperCase()} · AUFGABE ${taskIndex+1}/3 · SCHWIERIGKEIT ${"●".repeat(q.difficulty)}${"○".repeat(3-q.difficulty)}</span>
+      <h3>${esc(q.prompt)}</h3>${answerHTML}<div id="taskFeedback"></div><div class="actions">
+      <button class="primary" id="checkAnswer">Spur prüfen</button><button class="hint-btn" id="hintButton">${hintLabel}</button></div></div>`;
+  }
+  function bindTask(){
+    const q=currentStation?.tasks[taskIndex]; if(!q)return;
+    bindOrder(q);
+    document.querySelector("#checkAnswer")?.addEventListener("click",()=>check(q));
+    document.querySelector("#hintButton")?.addEventListener("click",()=>hint(q));
+  }
+  function bindOrder(q){
+    document.querySelectorAll("[data-up],[data-down]").forEach(b=>b.addEventListener("click",()=>{
+      const i=+(b.dataset.up??b.dataset.down), j=b.hasAttribute("data-up")?i-1:i+1;
+      if(j<0||j>=order.length)return; [order[i],order[j]]=[order[j],order[i]];
+      document.querySelector("#orderList").innerHTML=order.map((x,k)=>`<div class="answer"><span>${k+1}. ${esc(x)}</span><span><button data-up="${k}">↑</button> <button data-down="${k}">↓</button></span></div>`).join("");bindOrder(q);
+    }));
+  }
+  function check(q){
+    let ok=false;
+    if(q.type==="text"){ok=openAnswerCorrect(q,document.querySelector("#textAnswer").value);}
+    else if(q.type==="order")ok=JSON.stringify(order)===JSON.stringify(q.answer);
+    const f=document.querySelector("#taskFeedback");
+    if(!ok){
+      state.attempts=state.attempts||{};state.attempts[q.id]=(state.attempts[q.id]||0)+1;
+      state.streak=0;save();
+      const used=state.hints[q.id]||0;
+      f.innerHTML=`<div class="feedback bad"><strong>Noch nicht.</strong> ${used?q.hints[Math.min(used-1,q.hints.length-1)]:"Prüfe das Indiz und versuche es nochmals."}</div>`;return;
+    }
+    if(!state.taskResults[q.id]){
+      const firstTry=!((state.attempts||{})[q.id]>0), noHint=!(state.hints[q.id]>0);
+      let reward=8;const parts=["Textspur +8"];
+      if(firstTry){reward+=4;parts.push("Erstversuch +4");state.streak=(state.streak||0)+1;}else state.streak=0;
+      if(noHint){reward+=2;parts.push("ohne Hinweis +2");}
+      if(firstTry&&state.streak%3===0){reward+=5;parts.push("Dreierserie +5");}
+      state.bestStreak=Math.max(state.bestStreak||0,state.streak||0);
+      state.taskResults[q.id]=true;record(reward,`${q.creativeMode}: ${parts.join(", ")}`);save();
+    }
+    f.innerHTML=`<div class="feedback good"><strong>Spur bestätigt.</strong> ${esc(q.feedback)}<br><span class="muted">Lernziel: ${esc(q.objective)}</span></div>`;
+    document.querySelector("#checkAnswer").textContent=taskIndex===2?"Station abschliessen":"Nächste Aufgabe";
+    document.querySelector("#checkAnswer").onclick=()=>nextTask();
+  }
+  function hint(q){
+    const opened=state.hints[q.id]||0;
+    if(opened>=q.hints.length){
+      document.querySelector("#taskFeedback").innerHTML=`<div class="feedback"><strong>Hinweis ${q.hints.length}/${q.hints.length}:</strong> ${esc(q.hints[q.hints.length-1])}<br><span class="muted">Bereits bezahlt – keine weiteren Kosten.</span></div>`;return;
+    }
+    const cost=[1,2,3][opened]||3, used=Math.min(opened,q.hints.length-1);
+    state.hints[q.id]=opened+1;record(-cost,`Hinweis ${opened+1} zu ${q.creativeMode}`,"cost");save();
+    document.querySelector("#taskFeedback").innerHTML=`<div class="feedback"><strong>Hinweis ${used+1}/${q.hints.length} · −${cost} Eulen:</strong> ${esc(q.hints[used])}</div>`;
+    document.querySelector("#hintButton").textContent=opened+1>=q.hints.length?"Letzten Hinweis ansehen":`Hinweis ${opened+2} öffnen · −${[1,2,3][opened+1]||3} Eulen`;
+  }
+  function nextTask(){
+    if(taskIndex<2){taskIndex++;document.querySelector(".task-box").outerHTML=renderTask(currentStation.tasks[taskIndex]);bindTask();return;}
+    if(!state.completed.includes(currentStation.id)){state.completed.push(currentStation.id);state.clues.push(currentStation.reward);record(12,`Station abgeschlossen: ${currentStation.title}`);save();}
+    document.querySelector(".task-box").outerHTML=`<div class="summary"><div class="reward">${currentStation.symbol}</div><h3>Routenfragment gesichert</h3><p>${esc(currentStation.reward)}</p><button class="primary" id="continueTrail">Weiter zur Karte</button></div>`;
+    document.querySelector("#continueTrail").onclick=()=>{dialog.close();showTrail();};
+  }
+  function renderFinal(){
+    const p=D.finalPuzzle;
+    return `<section class="final-puzzle" style="margin-top:2rem"><p class="eyebrow">SCHLUSSRÄTSEL</p><h2>${p.title}</h2><p>${p.prompt}</p>
+      ${p.parts.map((x,i)=>`<label>${x.label}<input class="text-answer" data-final="${i}" placeholder="Begriff aus den gesammelten Spuren"></label>`).join("")}
+      <button class="primary" id="checkFinal">Athenes Siegel öffnen</button><div id="finalFeedback">${state.final?`<div class="feedback good"><strong>${p.solutionWord}</strong> · ${p.feedback}</div>`:""}</div></section>`;
+  }
+  function bindFinal(){
+    document.querySelector("#checkFinal")?.addEventListener("click",()=>{
+      const ok=D.finalPuzzle.parts.every((p,i)=>normal(document.querySelector(`[data-final="${i}"]`).value)===normal(p.answer));
+      document.querySelector("#finalFeedback").innerHTML=`<div class="feedback ${ok?"good":"bad"}">${ok?`<strong>${D.finalPuzzle.solutionWord}</strong> · ${D.finalPuzzle.feedback}`:"Mindestens eine Verbindung stimmt noch nicht. Prüfe Zorn, Treffpunkt und Penelopes privaten Beweis."}</div>`;
+      if(ok&&!state.final){state.final=true;record(30,"Schlussrätsel gelöst");save();}
+    });
+  }
+  function setView(name){
+    document.querySelectorAll("nav [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===name?"page":"false"));
+    ({trail:showTrail,threads:showThreads,route:showRoute,characters:showCharacters,clues:showClues,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
+    view.focus({preventScroll:true});
+  }
+  document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+  document.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
+  dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()});
+  document.querySelector("#resetButton").addEventListener("click",()=>{
+    if(confirm("Den gesamten lokalen Fortschritt wirklich löschen?")){
+      state={...initial,completed:[],taskResults:{},hints:{},attempts:{},clues:[],achievements:[],rewardedAchievements:[],
+        transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
+        writing:{fields:{},completed:[],revision:[],draftComplete:false}};save();showTrail();
+    }
+  });
+  updateHeader();showTrail();
+})();
