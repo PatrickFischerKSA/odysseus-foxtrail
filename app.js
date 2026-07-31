@@ -5,6 +5,13 @@
   const USERS_KEY = "athenes-schueler-v1";
   const ACTIVE_KEY = "athenes-aktives-profil-v1";
   const TEACHER_PIN_KEY = "athenes-lehrer-pin-v1";
+  const READING_PLAN = [
+    {date:"2026-08-24",pages:50,label:"bis Seite 50"},
+    {date:"2026-08-31",pages:100,label:"bis Seite 100"},
+    {date:"2026-09-07",pages:150,label:"bis Seite 150"},
+    {date:"2026-09-14",pages:200,label:"bis Seite 200"},
+    {date:"2026-09-21",pages:Infinity,label:"ganzes Buch"}
+  ];
   const initial = {
     completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
     rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
@@ -90,6 +97,28 @@
   function normal(s){ return String(s).trim().toLocaleLowerCase("de-CH").normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/[^a-z0-9]/g,""); }
   const stopWords=new Set(["die","der","das","den","dem","des","ein","eine","einen","einer","und","oder","mit","von","vor","nach","wird","werden","sich","sein","seine","ihre","ihren","ihm","sie","er","ist","als","bei","zum","zur","auf","wegen","durch","gegen"]);
   function words(s){return String(s).toLocaleLowerCase("de-CH").normalize("NFD").replace(/\p{Diacritic}/gu,"").match(/[a-z0-9]+/g)?.filter(w=>w.length>2&&!stopWords.has(w))||[]}
+  function maxPage(station){
+    return Math.max(...String(station.pageRef).match(/\d+/g).map(Number));
+  }
+  function releaseFor(station){
+    return READING_PLAN.find(phase=>maxPage(station)<=phase.pages)||READING_PLAN.at(-1);
+  }
+  function phaseDate(phase){
+    return new Date(`${phase.date}T00:00:00`);
+  }
+  function dateLabel(date){
+    return phaseDate({date}).toLocaleDateString("de-CH",{day:"2-digit",month:"2-digit",year:"numeric"});
+  }
+  function currentReadingLimit(){
+    const now=new Date();
+    return READING_PLAN.filter(phase=>now>=phaseDate(phase)).at(-1)?.pages||0;
+  }
+  function readingStations(){
+    return [...D.stations].sort((a,b)=>maxPage(a)-maxPage(b)||a.chapter[0]-b.chapter[0]);
+  }
+  function released(station){
+    return new Date()>=phaseDate(releaseFor(station));
+  }
   function openAnswerCorrect(q,value){
     const entered=words(value), compact=normal(value);
     if(!entered.length)return false;
@@ -104,7 +133,9 @@
     if(q.answer&&typeof q.answer==="object")return Object.entries(q.answer).every(([a,b])=>containsIdea(a)&&containsIdea(b));
     return containsIdea(q.answer);
   }
-  function unlocked(i){ return i===0 || state.completed.includes(D.stations[i-1].id); }
+  function unlocked(i,stations=readingStations()){
+    return released(stations[i])&&(i===0 || state.completed.includes(stations[i-1].id));
+  }
   function completeCount(){ return state.completed.length; }
   function updateHeader(){
     const p=Math.round(completeCount()/D.stations.length*100);
@@ -210,13 +241,25 @@
       <div class="legend">${Object.entries(D.threads).map(([k,t])=>`<span><i style="background:${t.colour}"></i>${t.label}</span>`).join("")}</div></div>`;
   }
   function showTrail(){
-    view.innerHTML=head("Die zerrissene Spur","FOXTRAIL-KARTE")+`<div class="trail">${
-      D.stations.map((s,i)=>{
-        const done=state.completed.includes(s.id), open=unlocked(i), t=D.threads[s.thread];
+    const stations=readingStations(), limit=currentReadingLimit();
+    const available=stations.filter(released).length;
+    const activePhase=[...READING_PLAN].reverse().find(phase=>new Date()>=phaseDate(phase));
+    view.innerHTML=head("Die zerrissene Spur","FOXTRAIL-KARTE")+`
+      <section class="reading-plan panel">
+        <div class="reading-plan-head"><div><p class="eyebrow">LESEPLAN 2026</p><h3>${activePhase?`Aktueller Lesestand: ${activePhase.label}`:"Start am 24. August"}</h3>
+        <p>Nur Stationen, deren vollständige Textgrundlage bereits gelesen wurde, werden freigegeben. ${available} von ${stations.length} Stationen sind derzeit verfügbar.</p></div>
+        <span class="reading-limit">${limit===Infinity?"Buch fertig":`${limit} Seiten`}</span></div>
+        <div class="reading-phases">${READING_PLAN.map(phase=>{
+          const active=new Date()>=phaseDate(phase), count=stations.filter(s=>maxPage(s)<=phase.pages).length;
+          return `<div class="reading-phase ${active?"released":""}"><strong>${dateLabel(phase.date)}</strong><span>${esc(phase.label)}</span><small>${count} Stationen insgesamt</small></div>`;
+        }).join("")}</div>
+      </section><div class="trail">${
+      stations.map((s,i)=>{
+        const done=state.completed.includes(s.id), isReleased=released(s), open=unlocked(i,stations), t=D.threads[s.thread], phase=releaseFor(s);
         return `<button class="station" style="--thread:${t.colour}" data-station="${s.id}" ${open?"":"disabled"}>
           <span class="sigil">${s.symbol}</span><span class="num">SPUR ${String(i+1).padStart(2,"0")} · ${t.label}</span>
-          <h3>${esc(s.title)}</h3><p class="source">${open?"ORT · "+esc(s.place):""}</p><p>${open?esc(s.discover):"Diese Spur ist noch versiegelt."}</p>
-          <span class="state">${done?"✓ REKONSTRUIERT":open?"ÖFFNEN":"VERSCHLOSSEN"}</span></button>`;
+          <h3>${esc(s.title)}</h3><p class="source">${open?"ORT · "+esc(s.place):""}</p><p>${open?esc(s.discover):isReleased?"Löse zuerst die vorherige freigegebene Spur.":`Freigabe am ${dateLabel(phase.date)} · ${phase.label}`}</p>
+          <span class="state">${done?"✓ REKONSTRUIERT":open?"ÖFFNEN":isReleased?"VORHERIGE SPUR FEHLT":"NOCH NICHT GELESEN"}</span></button>`;
       }).join("")
     }</div>${completeCount()===D.stations.length?renderFinal():""}`;
     view.querySelectorAll("[data-station]").forEach(b=>b.addEventListener("click",()=>openStation(b.dataset.station)));
@@ -555,6 +598,14 @@
   }
   function setView(name){
     document.querySelectorAll("nav [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===name?"page":"false"));
+    if(["threads","media","writing"].includes(name)&&currentReadingLimit()!==Infinity){
+      view.innerHTML=head("Noch nicht freigegeben","LESEPLAN 2026")+`<section class="panel reading-lock"><div class="reward">⌛</div>
+        <h3>Dieser Lernbereich setzt die vollständige Lektüre voraus.</h3>
+        <p>Erzählstränge und Heldenreise, die Video-Aufgaben sowie das kreative Schreibprojekt enthalten Wissen aus dem ganzen Buch. Sie werden am <strong>21.09.2026</strong> freigeschaltet.</p>
+        <button class="primary" data-view="trail">Zu den aktuellen Textspuren</button></section>`;
+      view.querySelector("[data-view=trail]").addEventListener("click",()=>setView("trail"));
+      view.focus({preventScroll:true});return;
+    }
     ({trail:showTrail,threads:showThreads,route:showRoute,characters:showCharacters,clues:showClues,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
     view.focus({preventScroll:true});
   }
