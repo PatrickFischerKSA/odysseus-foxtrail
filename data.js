@@ -86,7 +86,7 @@ window.ODYSSEUS_DATA = (() => {
       tasks:[
         task("t1","choice","Warum beginnt die Heimkehr der Achaier unter einem schlechten Zeichen?","Die Götter zürnen wegen der Untaten des Kriegs.",["Die Schiffe sind zu klein.","Die Götter zürnen wegen der Untaten des Kriegs.","Helena verbietet die Abfahrt.","Odysseus kennt den Weg nicht."],["Denke an das Verhalten der Sieger.","Achte auf Zeus und Athene am Kapitelanfang.","Lies PDF-Seiten 5–7."],"Lechner verbindet die schwierige Heimkehr ausdrücklich mit Schuld, Streit und göttlichem Zorn.","Ursachen erklären"),
         task("t2","match","Ordne Fürst und Bezug.",{"Menelaos":"Helena","Agamemnon":"Bruder des Menelaos","Odysseus":"Ithaka"},["Menelaos|Helena","Agamemnon|Bruder des Menelaos","Odysseus|Ithaka"],["Nutze Verwandtschaft und Herrschaftsort.","Eine Zuordnung führt direkt zur Heimat des Titelhelden.","Lies PDF-Seite 5."],"Die Beziehungen eröffnen die politische Welt der Heimkehrer.","Figurenbeziehungen"),
-        task("t3","order","Ordne die ersten Stationen.",["Troja","Kikonen","Lotophagen","Kyklopen"],["Troja","Kikonen","Lotophagen","Kyklopen"],["Beginne beim Kriegsschauplatz.","Die Frucht des Vergessens kommt vor der Höhle.","Lies Kapitel 1, PDF-Seiten 5–18."],"Lechner führt von Troja über zwei Zwischenstationen zu Polyphem.","Route sichern")
+        task("t3","text","Erkläre die Ursache-Folge-Kette vom missachteten Rat des Odysseus bis zum Verlust von sechs Männern auf jedem Schiff.","Die Gefährten bleiben trotz Odysseus’ Warnung, feiern und plündern; die Kikonen holen Verstärkung und töten bei der Gegenwehr sechs Männer auf jedem Schiff.",[],["Beginne mit Odysseus’ Aufforderung zur sofortigen Abfahrt.","Verbinde Feiern, Verstärkung und Flucht.","Lies PDF-Seiten 8–9."],"Die erste Niederlage entsteht aus dem missachteten Rat und der verzögerten Abfahrt.","Ursache und Folge erklären")
       ]
     },
     {
@@ -167,14 +167,14 @@ window.ODYSSEUS_DATA = (() => {
       ]
     },
     {
-      id:"phaiaken",title:"Der Fremde ohne Geschichte",thread:"odysseus",chapter:[6],pageRef:"128–154",symbol:"◇",
+      id:"phaiaken",title:"Der Fremde ohne Geschichte",thread:"odysseus",chapter:[3,6],pageRef:"77–83, 128–154",symbol:"◇",
       discover:"Ein Floss zerbricht. Am Strand muss ein namenloser Mann entscheiden, wem er seine Geschichte anvertraut.",
       read:"Lies von Kalyspos Freilassung bis zur Aufnahme bei den Phaiaken.",
       reward:"Routenfragment SCHERIA",
       tasks:[
-        task("f1","match","Ordne Eingriff und Wirkung.",{"Hermes":"Kalypso muss Odysseus ziehen lassen","Poseidon":"zerstört das Floss","Leukothea":"gibt einen rettenden Schleier","Athene":"ebnet die Landung"},["Hermes|Kalypso muss Odysseus ziehen lassen","Poseidon|zerstört das Floss","Leukothea|gibt einen rettenden Schleier","Athene|ebnet die Landung"],["Zwei Mächte helfen auf See, eine bekämpft ihn.","Hermes wirkt schon vor der Abfahrt.","Lies PDF-Seiten 128–133."],"Die Heimkehr entsteht aus gegensätzlichen göttlichen Eingriffen und Odysseus’ Ausdauer.","Götterrollen"),
+        task("f1","match","Ordne Eingriff und Wirkung.",{"Hermes":"Kalypso muss Odysseus ziehen lassen","Poseidon":"zerstört das Floss","Leukothea":"gibt einen rettenden Schleier","Athene":"ebnet die Landung"},["Hermes|Kalypso muss Odysseus ziehen lassen","Poseidon|zerstört das Floss","Leukothea|gibt einen rettenden Schleier","Athene|ebnet die Landung"],["Zwei Mächte helfen auf See, eine bekämpft ihn.","Hermes wirkt schon vor der Abfahrt.","Lies PDF-Seiten 77–83 und 128–133."],"Die Heimkehr entsteht aus gegensätzlichen göttlichen Eingriffen und Odysseus’ Ausdauer.","Götterrollen"),
         task("f2","choice","Warum geht Nausikaa nicht gemeinsam mit Odysseus durch die Stadt?","Sie will Gerede und falsche Deutungen vermeiden.",["Sie fürchtet seine Waffen.","Sie will Gerede und falsche Deutungen vermeiden.","Sie kennt den Palast nicht.","Alkinoos verbietet Hilfe."],["Es geht um ihren Ruf.","Sie gibt ihm dennoch genaue Anweisungen.","Lies PDF-Seiten 136–139."],"Nausikaa verbindet Hilfsbereitschaft mit sozialer Vorsicht.","Figureninteresse"),
-        task("f3","timeline","Welche Aussage trennt Erzählordnung und Zeitordnung korrekt?","Bei den Phaiaken erzählt Odysseus frühere Abenteuer rückblickend.",["Die Phaiaken-Episode geschieht vor Troja.","Bei den Phaiaken erzählt Odysseus frühere Abenteuer rückblickend.","Telemachos erzählt Polyphems Geschichte.","Lechner erwähnt die Irrfahrt erstmals hier."],["Das Erzählen geschieht später als das Erzählte.","Lechner hat die Abenteuer in Kapitel 1–3 bereits dargestellt.","Lies PDF-Seiten 143–154 und vergleiche Kapitel 1–3."],"Die Irrfahrt ist vergangen, wird aber in der Phaiaken-Gegenwart nochmals berichtet.","Erzählordnung verstehen",3)
+        task("f3","timeline","Welche Aussage trennt Erzählordnung und Zeitordnung korrekt?","Bei den Phaiaken erzählt Odysseus frühere Abenteuer rückblickend.",["Die Phaiaken-Episode geschieht vor Troja.","Bei den Phaiaken erzählt Odysseus frühere Abenteuer rückblickend.","Telemachos erzählt Polyphems Geschichte.","Lechner erwähnt die Irrfahrt erstmals hier."],["Das Erzählen geschieht später als das Erzählte.","Lechner hat die Abenteuer in Kapitel 1–3 bereits dargestellt.","Lies PDF-Seiten 143–154. Vergleiche anschliessend Kapitel 1–3."],"Die Irrfahrt ist vergangen, wird aber in der Phaiaken-Gegenwart nochmals berichtet.","Erzählordnung verstehen",3)
       ]
     },
     {
@@ -276,11 +276,11 @@ window.ODYSSEUS_DATA = (() => {
       tasks:[
         task("u1","order","Ordne den Zugang zum Wissen der Toten.",["Odysseus erreicht das Land der Kimmerier","Er gräbt die Opfergrube","Das Blut zieht die Schatten an","Teiresias darf sprechen"],["Odysseus erreicht das Land der Kimmerier","Er gräbt die Opfergrube","Das Blut zieht die Schatten an","Teiresias darf sprechen"],["Ort, Ritual, Schatten, Auskunft.","Odysseus kontrolliert zunächst, wer vom Opfer trinken darf.","Lies PDF-Seiten 43–46."],"Die Weissagung wird durch ein genau vorbereitetes Grenzritual zugänglich.","Ritual rekonstruieren"),
         task("u2","text","Welche Nachricht aus Ithaka macht die Begegnung mit Odysseus’ Mutter besonders schmerzhaft?","Sie berichtet von Penelopes und Telemachos’ Warten sowie Laertes’ Trauer und ist aus Sehnsucht nach Odysseus gestorben.",[],["Verbinde Familie, Abwesenheit und Tod.","Odysseus erfährt, was seine lange Abwesenheit zu Hause bewirkt.","Lies PDF-Seiten 48–51."],"Die Unterwelt zeigt erstmals sehr persönlich die Kosten der Abwesenheit auf Ithaka.","Familienfolgen"),
-        task("u3","text","Vergleiche das Wissen des Teiresias mit dem Wissen der Gefährten: Warum entsteht daraus später eine besondere Verantwortung für Odysseus?","Odysseus kennt die Warnung vor Helios’ Herde und muss sie der Mannschaft vermitteln und durchsetzen.",[],["Wissen schafft eine Führungsaufgabe.","Die spätere Katastrophe wurde hier bereits angekündigt.","Lies PDF-Seiten 45–48 und 67–71."],"Wer die Warnung kennt, trägt besondere Verantwortung für spätere Entscheidungen.","Wissen und Verantwortung",3)
+        task("u3","text","Welche besondere Verantwortung entsteht für Odysseus aus dem Wissen des Teiresias, noch bevor die weitere Reise beginnt?","Odysseus kennt die Warnung vor Helios’ Herde und muss sie der Mannschaft vermitteln und bei künftigen Entscheidungen durchsetzen.",[],["Wissen schafft eine Führungsaufgabe.","Odysseus muss die Weissagung in verantwortliches Handeln übersetzen.","Lies PDF-Seiten 45–48."],"Wer die Warnung kennt, trägt Verantwortung für die kommenden Entscheidungen.","Wissen und Verantwortung",3)
       ]
     },
     meerenge:{
-      id:"sechs",title:"Sechs leere Plätze",thread:"odysseus",chapter:[3],pageRef:"64–67",symbol:"Ⅵ",
+      id:"sechs",title:"Sechs leere Plätze",thread:"odysseus",chapter:[3],pageRef:"59–67",symbol:"Ⅵ",
       discover:"Nach der Meerenge stehen sechs Ruder still. Die Mannschaft hat den Strudel vermieden, aber einen Preis bezahlt.",
       read:"Konzentriere dich auf Kirkes Rat, Odysseus’ Entscheidung und Skyllas Angriff.",
       reward:"Indiz KLEINERES ÜBEL",
@@ -291,14 +291,14 @@ window.ODYSSEUS_DATA = (() => {
       ]
     },
     helios:{
-      id:"inselzeit",title:"Die Insel ohne Zeit",thread:"odysseus",chapter:[3,6],pageRef:"75–83, 128–130",symbol:"∞",
+      id:"inselzeit",title:"Die Insel ohne Zeit",thread:"odysseus",chapter:[3],pageRef:"75–83",symbol:"∞",
       discover:"Sieben Jahre lang sieht Odysseus aufs Meer. Kalypso bietet Unsterblichkeit, doch die Zeit ohne Heimkehr bleibt Gefangenschaft.",
       read:"Vergleiche Odysseus’ Leben bei Kalypso mit dem göttlichen Beschluss seiner Freilassung.",
       reward:"Figurenkarte KALYPSO",
       tasks:[
         task("ka1","text","Erkläre den Widerspruch: Kalyspos Insel bietet Sicherheit und Unsterblichkeit und ist für Odysseus trotzdem kein glückliches Ziel.","Odysseus sehnt sich nach Ithaka, Penelope und seinem menschlichen Leben; Kalypso hält ihn gegen seinen Heimkehrwunsch fest.",[],["Komfort und Freiheit sind nicht dasselbe.","Stelle Unsterblichkeit der Zugehörigkeit zur Heimat gegenüber.","Lies PDF-Seiten 75–82."],"Odysseus entscheidet sich für Bindung, Endlichkeit und Heimat statt für zeitlosen Komfort.","Wertekonflikt"),
-        task("ka2","text","Ordne Zeus, Athene, Hermes und Kalypso in die Freilassung ein: Wer fordert, entscheidet, überbringt und gehorcht?","Athene fordert Hilfe, Zeus entscheidet, Hermes überbringt den Befehl und Kalypso gehorcht widerwillig.",[],["Vier Rollen, vier Figuren.","Die Entscheidung wird nicht von der Person überbracht, die sie fordert.","Lies Kapitel 5–6, PDF-Seiten 126–130."],"Der Götterbeschluss funktioniert als Kette von Fürsprache, Autorität, Botschaft und Ausführung.","Götterordnung"),
-        task("ka3","text","Verfasse Odysseus’ erste Logbuchnotiz beim Bau des Flosses: Welche Hoffnung und welche Gefahr müssen vorkommen?","Hoffnung auf Ithaka und Gefahr des offenen Meers beziehungsweise Poseidons Zorn.",[],["Verbinde handwerkliches Handeln mit innerem Ziel.","Die Freilassung beendet Poseidons Widerstand nicht.","Lies PDF-Seiten 128–131."],"Der Flossbau macht Odysseus wieder zum Handelnden, bleibt aber ein riskanter Aufbruch.","Kreatives Textverstehen")
+        task("ka2","text","Ordne Zeus, Athene, Hermes und Kalypso in die Freilassung ein: Wer fordert, entscheidet, überbringt und gehorcht?","Athene fordert Hilfe, Zeus entscheidet, Hermes überbringt den Befehl und Kalypso gehorcht widerwillig.",[],["Vier Rollen, vier Figuren.","Die Entscheidung wird nicht von der Person überbracht, die sie fordert.","Lies PDF-Seiten 77–81."],"Der Götterbeschluss funktioniert als Kette von Fürsprache, Autorität, Botschaft und Ausführung.","Götterordnung"),
+        task("ka3","text","Verfasse Odysseus’ erste Logbuchnotiz beim Bau des Flosses: Welche Hoffnung und welche Gefahr müssen vorkommen?","Hoffnung auf Ithaka und Gefahr des offenen Meers beziehungsweise Poseidons Zorn.",[],["Verbinde handwerkliches Handeln mit innerem Ziel.","Die Freilassung beendet Poseidons Widerstand nicht.","Lies PDF-Seiten 82–83."],"Der Flossbau macht Odysseus wieder zum Handelnden, bleibt aber ein riskanter Aufbruch.","Kreatives Textverstehen")
       ]
     },
     ithaka:{
@@ -368,13 +368,13 @@ window.ODYSSEUS_DATA = (() => {
       ]
     },
     bogen:{
-      id:"verborgenehelfer",title:"Die verschlossene Waffenkammer",thread:"ithaka",chapter:[9,10],pageRef:"195–199, 216–224",symbol:"⚿",
+      id:"verborgenehelfer",title:"Die verschlossene Waffenkammer",thread:"ithaka",chapter:[8,9,10],pageRef:"182–184, 195, 203–205, 213–224",symbol:"⚿",
       discover:"Ein Plan gelingt nicht durch einen Bogen allein. Türen, Waffen und loyale Hände entscheiden, wer im Saal handlungsfähig bleibt.",
       read:"Verfolge Telemachos’ Entfernen der Waffen und die Aufgaben von Eumaios und Philoitios.",
       reward:"Bündnisfragment TREUE HELFER",
       tasks:[
         task("vh1","order","Ordne die Vorbereitung des Kräfteverhältnisses.",["Odysseus und Telemachos planen","Die Waffen werden aus dem Saal entfernt","Eumaios und Philoitios werden eingeweiht","Die Türen werden gesichert"],["Odysseus und Telemachos planen","Die Waffen werden aus dem Saal entfernt","Eumaios und Philoitios werden eingeweiht","Die Türen werden gesichert"],["Der geheime Familienplan beginnt vor der Einweihung weiterer Helfer.","Raumkontrolle wird unmittelbar vor dem Kampf wichtig.","Lies Kapitel 9–10."],"Der Sieg entsteht aus Vorbereitung, Vertrauen und Kontrolle des Raums.","Plan rekonstruieren"),
-        task("vh2","text","Warum vertraut Odysseus Eumaios und Philoitios, aber nicht Melanthios?","Die ersten beiden zeigen beständige Treue zum abwesenden Herrn; Melanthios dient den Freiern, verhöhnt den Bettler und beschafft ihnen Waffen.",[],["Vergleiche Verhalten vor der Enthüllung.","Die Verkleidung hat echte Loyalitäten sichtbar gemacht.","Lies PDF-Seiten 187–190 und 216–223."],"Odysseus stützt sein Bündnis auf beobachtetes Verhalten, nicht auf Rang oder Behauptungen.","Figuren vergleichen"),
+        task("vh2","text","Warum vertraut Odysseus Eumaios und Philoitios, aber nicht Melanthios?","Die ersten beiden zeigen beständige Treue zum abwesenden Herrn; Melanthios dient den Freiern, verhöhnt den Bettler und beschafft ihnen Waffen.",[],["Vergleiche Verhalten vor der Enthüllung.","Die Verkleidung hat echte Loyalitäten sichtbar gemacht.","Lies PDF-Seiten 182–184, 203–205 und 216–223."],"Odysseus stützt sein Bündnis auf beobachtetes Verhalten, nicht auf Rang oder Behauptungen.","Figuren vergleichen"),
         task("vh3","text","Erstelle für jeden der vier Kämpfer eine knappe Funktionsbeschreibung: Odysseus, Telemachos, Eumaios, Philoitios.","Odysseus führt und schiesst, Telemachos kämpft als Sohn, Eumaios sichert und unterstützt, Philoitios verschliesst beziehungsweise kämpft loyal.",[],["Nicht alle leisten dasselbe.","Verbinde familiäre und dienende Loyalität.","Lies PDF-Seiten 216–224."],"Der Kampf ist eine koordinierte Gemeinschaftsleistung um Odysseus.","Beziehungsnetz")
       ]
     },
