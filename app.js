@@ -22,6 +22,8 @@
   let state = load();
   let cloudSaveTimer = null;
   let teacherStudents = [];
+  let teacherUnlockedStations = [];
+  let teacherPinSession = "";
   let currentStation = null;
   let taskIndex = 0;
   let order = [];
@@ -117,7 +119,14 @@
     return [...D.stations].sort((a,b)=>maxPage(a)-maxPage(b)||a.chapter[0]-b.chapter[0]);
   }
   function released(station){
-    return new Date()>=phaseDate(releaseFor(station));
+    return teacherUnlockedStations.includes(station.id)||new Date()>=phaseDate(releaseFor(station));
+  }
+  async function loadTeacherUnlocks(){
+    try{
+      const response=await fetch(`${API}/settings`,{cache:"no-store"});
+      const result=await response.json();
+      if(response.ok)teacherUnlockedStations=Array.isArray(result.stationIds)?result.stationIds:[];
+    }catch{}
   }
   function openAnswerCorrect(q,value){
     const entered=words(value), compact=normal(value);
@@ -134,6 +143,7 @@
     return containsIdea(q.answer);
   }
   function unlocked(i,stations=readingStations()){
+    if(teacherUnlockedStations.includes(stations[i].id))return true;
     return released(stations[i])&&(i===0 || state.completed.includes(stations[i-1].id));
   }
   function completeCount(){ return state.completed.length; }
@@ -208,12 +218,34 @@
   function showTeacherDashboard(students){
     teacherStudents=students;
     const dashboard=document.querySelector("#teacherDashboard"), gate=document.querySelector("#teacherGate");
+    const stations=readingStations();
     gate.hidden=true;dashboard.hidden=false;
     dashboard.innerHTML=`<p class="local-warning"><strong>Zentrale Klassenübersicht:</strong> ${students.length} Profile · von allen verbundenen Schülergeräten.</p>
       <div class="teacher-actions"><button class="primary" id="exportClass" type="button">Klassendaten exportieren</button></div>
       <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>Name</th><th>Stationen</th><th>Fortschritt</th><th>Eulen</th><th>Schreibprojekt</th><th>Zuletzt aktiv</th></tr></thead>
-      <tbody>${teacherRows(students)||'<tr><td colspan="6">Noch keine Schülerprofile eingetragen.</td></tr>'}</tbody></table></div>`;
+      <tbody>${teacherRows(students)||'<tr><td colspan="6">Noch keine Schülerprofile eingetragen.</td></tr>'}</tbody></table></div>
+      <section class="station-release-panel"><div><p class="eyebrow">MANUELLE FREIGABEN</p><h3>Einzelne Stationen öffnen</h3>
+      <p>Markierte Stationen sind für alle Schüler sofort zugänglich – unabhängig von Datum und vorherigen Stationen.</p></div>
+      <div class="release-grid">${stations.map((station,index)=>{
+        const phase=releaseFor(station),checked=teacherUnlockedStations.includes(station.id);
+        return `<label class="release-item"><input type="checkbox" data-release-station="${station.id}" ${checked?"checked":""}>
+          <span><strong>${String(index+1).padStart(2,"0")} · ${esc(station.title)}</strong><small>PDF ${esc(station.pageRef)} · regulär ${dateLabel(phase.date)}</small></span></label>`;
+      }).join("")}</div>
+      <div class="teacher-actions"><button class="primary" id="saveStationReleases" type="button">Freigaben speichern</button>
+      <span id="releaseFeedback" aria-live="polite"></span></div></section>`;
     document.querySelector("#exportClass").addEventListener("click",exportClass);
+    document.querySelector("#saveStationReleases").addEventListener("click",saveStationReleases);
+  }
+  async function saveStationReleases(){
+    const stationIds=[...document.querySelectorAll("[data-release-station]:checked")].map(input=>input.dataset.releaseStation);
+    const feedback=document.querySelector("#releaseFeedback");
+    try{
+      const response=await fetch(`${API}/teacher/settings`,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({pin:teacherPinSession,stationIds})});
+      const result=await response.json();if(!response.ok)throw new Error(result.error||"Speichern nicht möglich.");
+      teacherUnlockedStations=result.stationIds||[];
+      feedback.innerHTML='<span class="sync-success">✓ Freigaben sind auf allen Geräten gespeichert.</span>';
+    }catch(error){feedback.innerHTML=`<span class="sync-error">${esc(error.message)}</span>`}
   }
   function openTeacher(){
     loginDialog.close();teacherDialog.showModal();
@@ -227,6 +259,8 @@
       try{
         const response=await fetch(`${API}/teacher/students`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin})});
         const result=await response.json();if(!response.ok)throw new Error(result.error||"Zugriff nicht möglich.");
+        teacherPinSession=pin;
+        await loadTeacherUnlocks();
         showTeacherDashboard(result.students||[]);
       }catch(error){document.querySelector("#teacherPinFeedback").innerHTML=`<div class="feedback bad">${esc(error.message)}</div>`}
     });
@@ -255,11 +289,11 @@
         }).join("")}</div>
       </section><div class="trail">${
       stations.map((s,i)=>{
-        const done=state.completed.includes(s.id), isReleased=released(s), open=unlocked(i,stations), t=D.threads[s.thread], phase=releaseFor(s);
+        const done=state.completed.includes(s.id), manual=teacherUnlockedStations.includes(s.id), isReleased=released(s), open=unlocked(i,stations), t=D.threads[s.thread], phase=releaseFor(s);
         return `<button class="station" style="--thread:${t.colour}" data-station="${s.id}" ${open?"":"disabled"}>
           <span class="sigil">${s.symbol}</span><span class="num">SPUR ${String(i+1).padStart(2,"0")} · ${t.label}</span>
           <h3>${esc(s.title)}</h3><p class="source">${open?"ORT · "+esc(s.place):""}</p><p>${open?esc(s.discover):isReleased?"Löse zuerst die vorherige freigegebene Spur.":`Freigabe am ${dateLabel(phase.date)} · ${phase.label}`}</p>
-          <span class="state">${done?"✓ REKONSTRUIERT":open?"ÖFFNEN":isReleased?"VORHERIGE SPUR FEHLT":"NOCH NICHT GELESEN"}</span></button>`;
+          <span class="state">${done?"✓ REKONSTRUIERT":manual?"VON DER LEHRPERSON FREIGEGEBEN":open?"ÖFFNEN":isReleased?"VORHERIGE SPUR FEHLT":"NOCH NICHT GELESEN"}</span></button>`;
       }).join("")
     }</div>${completeCount()===D.stations.length?renderFinal():""}`;
     view.querySelectorAll("[data-station]").forEach(b=>b.addEventListener("click",()=>openStation(b.dataset.station)));
@@ -626,5 +660,5 @@
         writing:{fields:{},completed:[],revision:[],draftComplete:false}};save();showTrail();
     }
   });
-  updateHeader();showTrail();if(!activeStudentId)window.setTimeout(openLogin,250);
+  updateHeader();showTrail();loadTeacherUnlocks().then(showTrail);if(!activeStudentId)window.setTimeout(openLogin,250);
 })();

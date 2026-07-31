@@ -9,3 +9,9 @@ CREATE TABLE IF NOT EXISTS students (
 );
 
 CREATE INDEX IF NOT EXISTS students_updated_at ON students(updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS class_settings (
+  setting_key TEXT PRIMARY KEY,
+  value_json TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);

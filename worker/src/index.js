@@ -41,6 +41,13 @@ export default {
     try {
       if (url.pathname === "/health") return json(request, { ok: true });
 
+      if (url.pathname === "/settings" && request.method === "GET") {
+        const row = await env.DB.prepare(
+          "SELECT value_json, updated_at FROM class_settings WHERE setting_key = 'station_unlocks'"
+        ).first();
+        return json(request, { stationIds: row ? JSON.parse(row.value_json) : [], updatedAt: row?.updated_at || 0 });
+      }
+
       if (url.pathname === "/register" && request.method === "POST") {
         const body = await request.json();
         const first = cleanName(body.first);
@@ -90,6 +97,19 @@ export default {
             state: JSON.parse(row.state_json), createdAt: row.created_at, updatedAt: row.updated_at
           }))
         });
+      }
+
+      if (url.pathname === "/teacher/settings" && request.method === "POST") {
+        const body = await request.json();
+        if (body.pin !== env.TEACHER_PIN) return json(request, { error: "Lehrer-PIN stimmt nicht." }, 403);
+        const stationIds = [...new Set(Array.isArray(body.stationIds) ? body.stationIds : [])]
+          .filter(id => typeof id === "string" && /^[a-z0-9-]{1,50}$/.test(id))
+          .slice(0, 50);
+        const now = Date.now();
+        await env.DB.prepare(
+          "INSERT INTO class_settings (setting_key, value_json, updated_at) VALUES ('station_unlocks', ?, ?) ON CONFLICT(setting_key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at"
+        ).bind(JSON.stringify(stationIds), now).run();
+        return json(request, { ok: true, stationIds, updatedAt: now });
       }
 
       return json(request, { error: "Nicht gefunden." }, 404);
