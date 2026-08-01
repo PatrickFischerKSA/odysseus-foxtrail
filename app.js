@@ -16,7 +16,7 @@
     completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
     rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
     streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-    writing:{fields:{},completed:[],revision:[],draftComplete:false},teiresiasChats:{},teiresiasCompleted:[],final:false
+    writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],teiresiasChats:{},teiresiasCompleted:[],final:false
   };
   let activeStudentId = localStorage.getItem(ACTIVE_KEY) || "";
   let state = load();
@@ -311,21 +311,30 @@
     }</div></div>
     <section class="hero-journey">
       <div class="section-head journey-head"><div><p class="eyebrow">ANALYSEMODELL</p><h2>${esc(journey.title)}</h2></div></div>
-      <div class="panel journey-intro"><p>${esc(journey.intro)}</p></div>
+      <div class="panel journey-intro"><p>${esc(journey.intro)}</p><div class="journey-source"><strong>Adaptierte Grundlage</strong><span>Zwölfstufiges Modell nach Christopher Vogler; kritisch auf Lechners Odysseus übertragen.</span><a href="${journey.source.url}" target="_blank" rel="noopener noreferrer">${esc(journey.source.label)} ↗</a></div></div>
       <div class="journey-lab panel"><div><p class="eyebrow">HELDENREISE-LERNLABOR</p><h3>${Object.keys(state.journeyResults||{}).length} von ${journey.tasks.length} Spuren gelöst</h3>
         <p>Beantworte die offenen Fragen. Jede Lösung schaltet die zugehörigen Deutungen frei und bringt Eulen.</p></div>
         <div class="journey-meter"><span style="width:${Object.keys(state.journeyResults||{}).length/journey.tasks.length*100}%"></span></div></div>
       <div class="journey-questions">${journey.tasks.map((q,i)=>renderJourneyQuestion(q,i)).join("")}</div>
-      <div class="journey-path">${journey.phases.map((p,i)=>{
+      <div class="journey-workshop-head panel"><div><p class="eyebrow">12-STUFEN-WERKSTATT</p><h3>${(state.journeyStageCompleted||[]).length} von 12 Deutungen erarbeitet</h3><p>Öffne jede Stufe, prüfe ihre Passung und formuliere eine eigene Textdeutung. Die Aufgaben werden gespeichert.</p></div><div class="journey-wheel" style="--journey-progress:${(state.journeyStageCompleted||[]).length*30}deg"><strong>${(state.journeyStageCompleted||[]).length}</strong><span>/ 12</span></div></div>
+      <div class="journey-path journey-path-12">${journey.phases.map((p,i)=>{
         const unlocked=journey.tasks.some(q=>(state.journeyResults||{})[q.id]&&q.phaseIds.includes(p.id));
-        return `<article class="journey-step ${unlocked?"":"journey-locked"}" style="--thread:${D.threads[p.thread].colour}">
-        <div class="journey-number">${p.number}</div><div><span class="chip">${D.threads[p.thread].label}</span><h3>${esc(p.name)}</h3>
-        <p>${esc(p.events)}</p>${unlocked?`<strong>${esc(p.meaning)}</strong><small>${esc(p.chapters)}</small>`:`<div class="locked-meaning">Deutung durch eine Lernlabor-Frage freischalten</div>`}</div>${i<journey.phases.length-1?'<span class="journey-arrow" aria-hidden="true">→</span>':""}</article>`}).join("")}</div>
+        const stageDone=(state.journeyStageCompleted||[]).includes(p.id),note=(state.journeyStageNotes||{})[p.id]||"";
+        return `<details class="journey-step journey-stage ${stageDone?"stage-done":""}" style="--thread:${D.threads[p.thread].colour}" ${i===0?"open":""}>
+        <summary><div class="journey-number">${p.number}</div><div><span class="chip">${esc(p.act)}</span><h3>${esc(p.name)}</h3><small class="fit fit-${p.fit}">${p.fit==="strong"?"starke Passung":p.fit==="partial"?"teilweise Passung":"bewusste Leerstelle"}</small></div></summary>
+        <div class="journey-stage-body"><p class="stage-concept"><strong>Konzept:</strong> ${esc(p.concept)}</p><p><strong>Bei Lechner:</strong> ${esc(p.events)}</p><p class="stage-meaning"><strong>Deutung:</strong> ${esc(p.meaning)}</p><small>${esc(p.chapters)}</small>
+        <div class="stage-task"><label for="stage-${p.id}">${esc(p.workshopPrompt)}</label><textarea id="stage-${p.id}" data-stage-note="${p.id}" rows="4" placeholder="Deute mit konkreten Ereignissen und Figuren …">${esc(note)}</textarea><div class="stage-task-actions"><span data-stage-count="${p.id}">${note.length}/80 Zeichen</span><button class="primary" data-complete-stage="${p.id}" ${stageDone?"disabled":""}>${stageDone?"Erarbeitet ✓":"Deutung sichern · +4 Eulen"}</button></div><div data-stage-feedback="${p.id}"></div></div></div>
+        </details>`}).join("")}</div>
       <div class="journey-bottom"><article class="panel"><p class="eyebrow">TELEMACHOS’ KLEINE HELDENREISE</p><ol>${
         journey.telemachos.map(x=>`<li>${esc(x)}</li>`).join("")
       }</ol></article><article class="panel caution-card"><p class="eyebrow">ACHTUNG: DREI ORDNUNGEN</p><p>${esc(journey.caution)}</p></article></div>
     </section>`;
-    bindJourneyQuestions();
+    bindJourneyQuestions();bindJourneyStages();
+  }
+  function bindJourneyStages(){
+    state.journeyStageNotes=state.journeyStageNotes||{};state.journeyStageCompleted=state.journeyStageCompleted||[];
+    document.querySelectorAll("[data-stage-note]").forEach(area=>area.addEventListener("input",()=>{state.journeyStageNotes[area.dataset.stageNote]=area.value;const count=document.querySelector(`[data-stage-count="${area.dataset.stageNote}"]`);if(count)count.textContent=`${area.value.length}/80 Zeichen`;save()}));
+    document.querySelectorAll("[data-complete-stage]").forEach(button=>button.addEventListener("click",()=>{const id=button.dataset.completeStage,note=(state.journeyStageNotes[id]||"").trim(),feedback=document.querySelector(`[data-stage-feedback="${id}"]`);if(note.length<80){feedback.innerHTML='<div class="feedback bad">Begründe genauer und verwende mindestens 80 Zeichen.</div>';return}if(!state.journeyStageCompleted.includes(id)){state.journeyStageCompleted.push(id);record(4,`Heldenreise-Stufe erarbeitet: ${D.heroJourney.phases.find(p=>p.id===id).name}`);save();showThreads()}}));
   }
   function renderJourneyQuestion(q,index){
     const solved=(state.journeyResults||{})[q.id], hints=(state.journeyHints||{})[q.id]||0;
@@ -460,7 +469,7 @@
       <div class="writing-stages">${p.stages.map((s,i)=>{
         const unlocked=i===0||completed.includes(p.stages[i-1].id), done=completed.includes(s.id), value=state.writing.fields[s.id]||"";
         return `<article class="panel writing-stage ${unlocked?"":"writing-locked"} ${done?"done":""}">
-          <div class="writing-stage-head"><span>${s.number}</span><div><p class="source">${done?"ABGESCHLOSSEN":unlocked?"IN ARBEIT":"NOCH GESPERRT"}</p><h3>${esc(s.title)}</h3></div></div>
+          <div class="writing-stage-head"><span>${s.number}</span><div><p class="source">${done?"ABGESCHLOSSEN":unlocked?"IN ARBEIT":"NOCH GESPERRT"}</p><span class="chip">${esc(s.heroStages)}</span><h3>${esc(s.title)}</h3></div></div>
           ${unlocked?`<p>${esc(s.prompt)}</p><div class="prompt-grid">${s.questions.map(q=>`<span>${esc(q)}</span>`).join("")}</div>
           <label for="write-${s.id}">Planungsnotizen</label><textarea id="write-${s.id}" data-writing-field="${s.id}" rows="8" placeholder="Entwickle diesen Baustein mit eigenen Ideen …">${esc(value)}</textarea>
           <div class="writing-actions"><span data-count="${s.id}">${value.length}/${s.min} Zeichen Mindestumfang</span>
@@ -707,7 +716,7 @@
     if(confirm("Den gesamten lokalen Fortschritt wirklich löschen?")){
       state={...initial,completed:[],taskResults:{},hints:{},attempts:{},clues:[],achievements:[],rewardedAchievements:[],
         transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-        writing:{fields:{},completed:[],revision:[],draftComplete:false},teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
+        writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
     }
   });
   updateHeader();showTrail();loadTeacherUnlocks().then(showTrail);if(!activeStudentId)window.setTimeout(openLogin,250);

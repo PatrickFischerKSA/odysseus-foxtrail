@@ -16,6 +16,10 @@ const pagesFrom=text=>{
 };
 if(d.stations.length!==28)errors.push(`erwartet 28 Stationen, gefunden ${d.stations.length}`);
 if(d.teiresiasInterrogations?.length!==6)errors.push(`erwartet 6 Teiresias-Befragungen, gefunden ${d.teiresiasInterrogations?.length||0}`);
+if(d.heroJourney?.phases?.length!==12)errors.push(`erwartet 12 Heldenreise-Stufen, gefunden ${d.heroJourney?.phases?.length||0}`);
+const journeyPhaseIds=new Set((d.heroJourney?.phases||[]).map(x=>x.id));
+for(const phase of d.heroJourney?.phases||[])if(!phase.concept||!phase.events||!phase.meaning||!phase.workshopPrompt||!phase.fit)errors.push(`Heldenreise-Stufe unvollständig: ${phase.id}`);
+for(const task of d.heroJourney?.tasks||[])for(const id of task.phaseIds)if(!journeyPhaseIds.has(id))errors.push(`Unbekannte Heldenreise-Stufe ${id} in ${task.id}`);
 for(const oracle of d.teiresiasInterrogations||[]){
   if(!oracle.source||!oracle.answer||!oracle.guide||oracle.terms.length<5)errors.push(`Teiresias-Befragung unvollständig: ${oracle.id}`);
   if(Math.max(...pagesFrom(oracle.source))>54)errors.push(`Teiresias-Befragung greift zu weit voraus: ${oracle.id}`);
