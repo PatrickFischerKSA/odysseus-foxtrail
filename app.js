@@ -16,7 +16,7 @@
     completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
     rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
     streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-    writing:{fields:{},completed:[],revision:[],draftComplete:false},final:false
+    writing:{fields:{},completed:[],revision:[],draftComplete:false},teiresiasChats:{},teiresiasCompleted:[],final:false
   };
   let activeStudentId = localStorage.getItem(ACTIVE_KEY) || "";
   let state = load();
@@ -509,6 +509,56 @@
     const link=document.createElement("a");link.href=URL.createObjectURL(new Blob([content],{type:"text/plain;charset=utf-8"}));
     link.download="heldenreise-eines-sportlers.txt";link.click();URL.revokeObjectURL(link.href);
   }
+  function oracleAvailable(){return currentReadingLimit()>=57||teacherUnlockedStations.includes("totenstimmen")}
+  function oracleVoice(){
+    const voices=speechSynthesis.getVoices(), german=voices.filter(v=>/^de/i.test(v.lang));
+    return german.find(v=>/martin|markus|stefan|male|deutsch/i.test(v.name))||german[0]||voices[0];
+  }
+  function speakOracle(text){
+    if(!("speechSynthesis" in window))return;
+    speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(String(text).replace(/[;:]/g," … "));
+    utterance.lang="de-DE";utterance.rate=.64;utterance.pitch=.42;utterance.volume=.96;
+    const voice=oracleVoice();if(voice)utterance.voice=voice;
+    speechSynthesis.speak(utterance);
+  }
+  function oracleReply(item,question){
+    const hits=item.terms.filter(term=>words(question).some(word=>word.startsWith(normal(term).slice(0,5))||normal(term).startsWith(word.slice(0,5))));
+    if(hits.length)return item.answer;
+    return `Deine Frage dringt noch nicht bis zu dieser Spur vor. ${item.guide} Bleibe bei ${item.source.replace("PDF-","")}.`;
+  }
+  function showTeiresias(){
+    if(!oracleAvailable()){
+      view.innerHTML=head("Die Stimme ist noch fern","FREIGABE AB SEITE 57")+`<section class="panel reading-lock"><div class="reward">◉</div><h3>Die Unterwelt darf nichts vorwegnehmen.</h3><p>Die sechs Befragungen werden am <strong>31.08.2026</strong> nach der Lektüre bis mindestens Seite 57 freigegeben. Die Lehrperson kann die Station «Totenstimmen» früher öffnen.</p><button class="primary" data-view="trail">Zu den aktuellen Textspuren</button></section>`;
+      view.querySelector("[data-view=trail]").addEventListener("click",()=>setView("trail"));return;
+    }
+    state.teiresiasChats=state.teiresiasChats||{};state.teiresiasCompleted=state.teiresiasCompleted||[];
+    view.innerHTML=head("Befrage Teiresias","SECHS STIMMEN AUS DEM JENSEITS")+`<section class="oracle-intro panel"><div class="oracle-sigil" aria-hidden="true">◉</div><div><h2>Sprich – und höre die Weissagung</h2><p>Wähle eine Befragung, formuliere eine eigene Frage oder sprich sie ins Mikrofon. Teiresias antwortet nur innerhalb der angegebenen Textspur. Die Stimme wird lokal durch dein Gerät erzeugt; ihre genaue Klangfarbe hängt vom verfügbaren Browser und Betriebssystem ab.</p><p class="source">QUELLENGRENZE · PDF-SEITEN 45–54 · KEIN WISSEN AUS SPÄTEREN KAPITELN</p></div><div class="oracle-count"><strong>${state.teiresiasCompleted.length}/6</strong><span>befragt</span></div></section>
+      <div class="oracle-grid">${D.teiresiasInterrogations.map(item=>{const chat=state.teiresiasChats[item.id]||[];return `<article class="oracle-card panel ${state.teiresiasCompleted.includes(item.id)?"answered":""}" data-oracle-card="${item.id}"><p class="source">${esc(item.source)}</p><h3>${esc(item.title)}</h3><p class="oracle-opening">${esc(item.opening)}</p><p class="oracle-guide">${esc(item.guide)}</p><div class="oracle-transcript" data-oracle-log="${item.id}" aria-live="polite">${chat.map(turn=>`<p class="${turn.role}"><span>${turn.role==="student"?"DU":"TEIRESIAS"}</span>${esc(turn.text)}</p>`).join("")}</div><label for="oracle-${item.id}">Deine Frage</label><textarea id="oracle-${item.id}" rows="3" data-oracle-input="${item.id}" placeholder="Frage mit eigenen Worten …"></textarea><div class="oracle-actions"><button class="hint-btn" data-oracle-mic="${item.id}" type="button">◉ Frage sprechen</button><button class="primary" data-oracle-send="${item.id}" type="button">Teiresias befragen</button><button class="oracle-stop" data-oracle-stop type="button">Stimme stoppen</button></div><small class="oracle-status" data-oracle-status="${item.id}"></small></article>`}).join("")}</div>`;
+    bindOracle();
+  }
+  function bindOracle(){
+    document.querySelectorAll("[data-oracle-send]").forEach(button=>button.addEventListener("click",()=>askOracle(button.dataset.oracleSend)));
+    document.querySelectorAll("[data-oracle-input]").forEach(input=>input.addEventListener("keydown",event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();askOracle(input.dataset.oracleInput)}}));
+    document.querySelectorAll("[data-oracle-stop]").forEach(button=>button.addEventListener("click",()=>window.speechSynthesis?.cancel()));
+    document.querySelectorAll("[data-oracle-mic]").forEach(button=>button.addEventListener("click",()=>{
+      const id=button.dataset.oracleMic, Recognition=window.SpeechRecognition||window.webkitSpeechRecognition, status=document.querySelector(`[data-oracle-status="${id}"]`);
+      if(!Recognition){status.textContent="Spracheingabe wird von diesem Browser nicht unterstützt. Tippe deine Frage ein.";return;}
+      const recognition=new Recognition();recognition.lang="de-CH";recognition.interimResults=false;recognition.maxAlternatives=1;
+      status.textContent="Das Orakel hört zu …";button.classList.add("listening");recognition.start();
+      recognition.onresult=event=>{document.querySelector(`[data-oracle-input="${id}"]`).value=event.results[0][0].transcript;status.textContent="Frage erkannt. Du kannst sie prüfen und absenden."};
+      recognition.onerror=()=>{status.textContent="Die Spracheingabe gelang nicht. Erlaube den Mikrofonzugriff oder tippe die Frage."};
+      recognition.onend=()=>button.classList.remove("listening");
+    }));
+  }
+  function askOracle(id){
+    const input=document.querySelector(`[data-oracle-input="${id}"]`),question=input.value.trim(),status=document.querySelector(`[data-oracle-status="${id}"]`);
+    if(question.length<5){status.textContent="Formuliere eine vollständige Frage.";return;}
+    const item=D.teiresiasInterrogations.find(x=>x.id===id),answer=oracleReply(item,question);
+    state.teiresiasChats[id]=[...(state.teiresiasChats[id]||[]),{role:"student",text:question},{role:"oracle",text:answer}].slice(-8);
+    if(!state.teiresiasCompleted.includes(id)){state.teiresiasCompleted.push(id);record(6,`Teiresias befragt: ${item.title}`);}
+    save();showTeiresias();speakOracle(answer);
+  }
   function showMedia(){
     const m=D.mediaResource;
     view.innerHTML=head(m.title,"ERGÄNZENDE MULTIMEDIA-SPUR")+`<div class="media-layout">
@@ -640,7 +690,7 @@
       view.querySelector("[data-view=trail]").addEventListener("click",()=>setView("trail"));
       view.focus({preventScroll:true});return;
     }
-    ({trail:showTrail,threads:showThreads,route:showRoute,characters:showCharacters,clues:showClues,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
+    ({trail:showTrail,threads:showThreads,route:showRoute,characters:showCharacters,clues:showClues,teiresias:showTeiresias,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
     view.focus({preventScroll:true});
   }
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
@@ -657,7 +707,7 @@
     if(confirm("Den gesamten lokalen Fortschritt wirklich löschen?")){
       state={...initial,completed:[],taskResults:{},hints:{},attempts:{},clues:[],achievements:[],rewardedAchievements:[],
         transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-        writing:{fields:{},completed:[],revision:[],draftComplete:false}};save();showTrail();
+        writing:{fields:{},completed:[],revision:[],draftComplete:false},teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
     }
   });
   updateHeader();showTrail();loadTeacherUnlocks().then(showTrail);if(!activeStudentId)window.setTimeout(openLogin,250);

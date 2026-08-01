@@ -15,6 +15,11 @@ const pagesFrom=text=>{
   return pages;
 };
 if(d.stations.length!==28)errors.push(`erwartet 28 Stationen, gefunden ${d.stations.length}`);
+if(d.teiresiasInterrogations?.length!==6)errors.push(`erwartet 6 Teiresias-Befragungen, gefunden ${d.teiresiasInterrogations?.length||0}`);
+for(const oracle of d.teiresiasInterrogations||[]){
+  if(!oracle.source||!oracle.answer||!oracle.guide||oracle.terms.length<5)errors.push(`Teiresias-Befragung unvollständig: ${oracle.id}`);
+  if(Math.max(...pagesFrom(oracle.source))>54)errors.push(`Teiresias-Befragung greift zu weit voraus: ${oracle.id}`);
+}
 if(tasks.length!==84)errors.push(`erwartet 84 Aufgaben, gefunden ${tasks.length}`);
 if(d.characters.length<20)errors.push("weniger als 20 Figuren");
 if(tasks.some(x=>!["text","order"].includes(x.q.type)))errors.push("nicht-offener Aufgabentyp vorhanden");
