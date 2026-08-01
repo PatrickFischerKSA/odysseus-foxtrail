@@ -221,7 +221,7 @@
     const stations=readingStations();
     gate.hidden=true;dashboard.hidden=false;
     dashboard.innerHTML=`<p class="local-warning"><strong>Zentrale Klassenübersicht:</strong> ${students.length} Profile · von allen verbundenen Schülergeräten.</p>
-      <div class="teacher-actions"><button class="primary" id="exportClass" type="button">Klassendaten exportieren</button></div>
+      <div class="teacher-actions"><button class="primary" id="previewJourney" type="button">12-Stufen-Werkstatt ansehen</button><button class="hint-btn" id="exportClass" type="button">Klassendaten exportieren</button></div>
       <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>Name</th><th>Stationen</th><th>Fortschritt</th><th>Eulen</th><th>Schreibprojekt</th><th>Zuletzt aktiv</th></tr></thead>
       <tbody>${teacherRows(students)||'<tr><td colspan="6">Noch keine Schülerprofile eingetragen.</td></tr>'}</tbody></table></div>
       <section class="station-release-panel"><div><p class="eyebrow">MANUELLE FREIGABEN</p><h3>Einzelne Stationen öffnen</h3>
@@ -234,6 +234,7 @@
       <div class="teacher-actions"><button class="primary" id="saveStationReleases" type="button">Freigaben speichern</button>
       <span id="releaseFeedback" aria-live="polite"></span></div></section>`;
     document.querySelector("#exportClass").addEventListener("click",exportClass);
+    document.querySelector("#previewJourney").addEventListener("click",()=>{teacherDialog.close();setView("threads")});
     document.querySelector("#saveStationReleases").addEventListener("click",saveStationReleases);
   }
   async function saveStationReleases(){
@@ -311,7 +312,8 @@
     }</div></div>
     <section class="hero-journey">
       <div class="section-head journey-head"><div><p class="eyebrow">ANALYSEMODELL</p><h2>${esc(journey.title)}</h2></div></div>
-      <div class="panel journey-intro"><p>${esc(journey.intro)}</p><div class="journey-source"><strong>Adaptierte Grundlage</strong><span>Zwölfstufiges Modell nach Christopher Vogler; kritisch auf Lechners Odysseus übertragen.</span><a href="${journey.source.url}" target="_blank" rel="noopener noreferrer">${esc(journey.source.label)} ↗</a></div></div>
+      <div class="panel journey-intro"><p>${esc(journey.intro)}</p><div class="journey-source"><strong>Vollständig eingebaute Adaption</strong><span>Alle zwölf Stufen sind unten erklärt, auf Lechners Roman übertragen und mit eigenen Arbeitsaufträgen versehen. Die externe Seite ist nur der transparente Herkunftsnachweis.</span><a href="${journey.source.url}" target="_blank" rel="noopener noreferrer">Originalquelle ↗</a></div></div>
+      <div class="journey-acts">${["AUFBRUCH","PRÜFUNG","RÜCKKEHR"].map((act,i)=>`<article><span>AKT ${i+1}</span><strong>${act}</strong><small>${journey.phases.filter(p=>p.act===act).map(p=>p.number).join(" · ")}</small></article>`).join("")}</div>
       <div class="journey-lab panel"><div><p class="eyebrow">HELDENREISE-LERNLABOR</p><h3>${Object.keys(state.journeyResults||{}).length} von ${journey.tasks.length} Spuren gelöst</h3>
         <p>Beantworte die offenen Fragen. Jede Lösung schaltet die zugehörigen Deutungen frei und bringt Eulen.</p></div>
         <div class="journey-meter"><span style="width:${Object.keys(state.journeyResults||{}).length/journey.tasks.length*100}%"></span></div></div>
@@ -691,7 +693,7 @@
   }
   function setView(name){
     document.querySelectorAll("nav [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===name?"page":"false"));
-    if(["threads","media","writing"].includes(name)&&currentReadingLimit()!==Infinity){
+    if(["threads","media","writing"].includes(name)&&currentReadingLimit()!==Infinity&&!teacherPinSession){
       view.innerHTML=head("Noch nicht freigegeben","LESEPLAN 2026")+`<section class="panel reading-lock"><div class="reward">⌛</div>
         <h3>Dieser Lernbereich setzt die vollständige Lektüre voraus.</h3>
         <p>Erzählstränge und Heldenreise, die Video-Aufgaben sowie das kreative Schreibprojekt enthalten Wissen aus dem ganzen Buch. Sie werden am <strong>21.09.2026</strong> freigeschaltet.</p>
