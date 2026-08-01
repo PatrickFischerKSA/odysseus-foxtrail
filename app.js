@@ -288,21 +288,27 @@
           const active=new Date()>=phaseDate(phase), count=stations.filter(s=>maxPage(s)<=phase.pages).length;
           return `<div class="reading-phase ${active?"released":""}"><strong>${dateLabel(phase.date)}</strong><span>${esc(phase.label)}</span><small>${count} Stationen insgesamt</small></div>`;
         }).join("")}</div>
-      </section><section class="voyage-board" aria-label="Odysseus’ Heimreise als Lernpfad">
-      <div class="voyage-compass" aria-hidden="true"><span>N</span><i></i></div>
-      <div class="voyage-port voyage-origin"><span>AUFBRUCH</span><strong>⚔ TROJA</strong><small>Der Krieg ist beendet.<br>Die Heimfahrt beginnt.</small></div>
-      <div class="trail">${
+      </section><section class="voyage-map" aria-label="Odysseus’ Heimreise als interaktive Seekarte">
+      <div class="voyage-map-head"><div><p class="eyebrow">VON TROJA NACH ITHAKA</p><h3>Fahre die Heimreise Etappe für Etappe</h3><p>Jeder Wegpunkt ist eine Textstation. Das Schiff zeigt, wo deine Reise weitergeht.</p></div><div class="map-progress"><strong>${completeCount()}</strong><span>/ ${stations.length} Etappen</span></div></div>
+      <div class="voyage-sea"><canvas id="voyageRoute" aria-hidden="true"></canvas><div class="sea-current current-a" aria-hidden="true"></div><div class="sea-current current-b" aria-hidden="true"></div>
+      <div class="map-port map-troja" data-route-point><span>START</span><strong>TROJA</strong><small>Der Krieg ist vorbei</small></div>${
       stations.map((s,i)=>{
         const done=state.completed.includes(s.id), manual=teacherUnlockedStations.includes(s.id), isReleased=released(s), open=unlocked(i,stations), t=D.threads[s.thread], phase=releaseFor(s);
-        const row=Math.floor(i/4)+1, column=row%2?i%4+1:4-i%4, current=open&&!done&&(i===0||state.completed.includes(stations[i-1].id));
-        return `<button class="station voyage-stop ${done?"sailed":""} ${current?"current-stop":""}" style="--thread:${t.colour};grid-row:${row};grid-column:${column}" data-station="${s.id}" ${open?"":"disabled"}>
-          <span class="waypoint" aria-hidden="true"></span>${current?'<span class="voyage-ship" aria-label="Aktuelle Position">⛵</span>':""}
-          <span class="sigil">${s.symbol}</span><span class="num">SPUR ${String(i+1).padStart(2,"0")} · ${t.label}</span>
-          <h3>${esc(s.title)}</h3><p class="source">${open?"ORT · "+esc(s.place):""}</p><p>${open?esc(s.discover):isReleased?"Löse zuerst die vorherige freigegebene Spur.":`Freigabe am ${dateLabel(phase.date)} · ${phase.label}`}</p>
-          <span class="state">${done?"✓ REKONSTRUIERT":manual?"VON DER LEHRPERSON FREIGEGEBEN":open?"ÖFFNEN":isReleased?"VORHERIGE SPUR FEHLT":"NOCH NICHT GELESEN"}</span></button>`;
+        const row=Math.floor(i/4), slot=i%4, x=(row%2?88-slot*25.5:11+slot*25.5), y=180+row*190+(slot%2?18:-12), current=open&&!done&&(i===0||state.completed.includes(stations[i-1].id));
+        return `<button class="journey-node ${done?"sailed":""} ${current?"current-node":""}" style="--thread:${t.colour};left:${x}%;top:${y}px" data-route-point data-station="${s.id}" ${open?"":"disabled"} aria-label="Spur ${i+1}: ${esc(s.title)}">
+          ${current?'<span class="map-ship" aria-hidden="true">⛵</span>':""}<span class="node-disc"><i>${done?"✓":s.symbol}</i><b>${String(i+1).padStart(2,"0")}</b></span>
+          <span class="node-label"><strong>${esc(s.title)}</strong><small>${open?esc(s.place):isReleased?"Vorherige Spur fehlt":`ab ${dateLabel(phase.date)}`}</small></span></button>`;
       }).join("")
-    }</div><div class="voyage-port voyage-home"><span>ZIEL DER REISE</span><strong>⌂ ITHAKA</strong><small>Heimat · Identität · Frieden</small></div></section>${completeCount()===D.stations.length?renderFinal():""}`;
+    }<div class="map-port map-ithaka ${completeCount()===stations.length?"reached":""}" data-route-point><span>ZIEL</span><strong>ITHAKA</strong><small>Heimat · Identität · Frieden</small></div></div></section>${completeCount()===D.stations.length?renderFinal():""}`;
     view.querySelectorAll("[data-station]").forEach(b=>b.addEventListener("click",()=>openStation(b.dataset.station)));
+    window.requestAnimationFrame(drawVoyageRoute);
+  }
+  function drawVoyageRoute(){
+    const sea=document.querySelector(".voyage-sea"),canvas=document.querySelector("#voyageRoute");if(!sea||!canvas)return;
+    const ratio=window.devicePixelRatio||1,box=sea.getBoundingClientRect();canvas.width=box.width*ratio;canvas.height=box.height*ratio;canvas.style.width=box.width+"px";canvas.style.height=box.height+"px";
+    const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const points=[...sea.querySelectorAll("[data-route-point]")].map(node=>{const r=node.getBoundingClientRect();return{x:r.left-box.left+r.width/2,y:r.top-box.top+r.height/2}});
+    const path=(end,color,width,dash)=>{ctx.beginPath();points.slice(0,end).forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin="round";ctx.lineCap="round";ctx.setLineDash(dash);ctx.stroke()};
+    path(points.length,"rgba(126,183,197,.42)",4,[5,11]);path(Math.min(completeCount()+2,points.length),"rgba(113,213,167,.9)",5,[]);
   }
   function showThreads(){
     const counts={}; D.events.forEach(e=>counts[e.thread]=(counts[e.thread]||0)+1);
