@@ -5,6 +5,7 @@
   const USERS_KEY = "athenes-schueler-v1";
   const ACTIVE_KEY = "athenes-aktives-profil-v1";
   const TEACHER_PIN_KEY = "athenes-lehrer-pin-v1";
+  const FILM_PAUSED_KEY = "athenes-hintergrundfilm-pausiert-v1";
   const READING_PLAN = [
     {date:"2026-08-24",pages:50,label:"bis Seite 50"},
     {date:"2026-08-31",pages:100,label:"bis Seite 100"},
@@ -741,6 +742,14 @@
   }
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
   document.querySelector("#profileButton").addEventListener("click",openLogin);
+  const backgroundFilm=document.querySelector(".cinematic-bg"),filmToggle=document.querySelector("#filmToggle");
+  function setFilmPaused(paused){
+    if(paused)backgroundFilm.pause();else backgroundFilm.play().catch(()=>{});
+    filmToggle.setAttribute("aria-pressed",String(paused));filmToggle.textContent=paused?"▶ Film starten":"Ⅱ Film pausieren";
+    localStorage.setItem(FILM_PAUSED_KEY,String(paused));
+  }
+  filmToggle.addEventListener("click",()=>setFilmPaused(filmToggle.getAttribute("aria-pressed")!=="true"));
+  if(localStorage.getItem(FILM_PAUSED_KEY)==="true")setFilmPaused(true);
   document.querySelector("#studentLoginForm").addEventListener("submit",event=>{
     event.preventDefault();loginStudent(document.querySelector("#studentFirstName").value,document.querySelector("#studentLastName").value);
   });
