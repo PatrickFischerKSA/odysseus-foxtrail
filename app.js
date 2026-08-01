@@ -288,15 +288,20 @@
           const active=new Date()>=phaseDate(phase), count=stations.filter(s=>maxPage(s)<=phase.pages).length;
           return `<div class="reading-phase ${active?"released":""}"><strong>${dateLabel(phase.date)}</strong><span>${esc(phase.label)}</span><small>${count} Stationen insgesamt</small></div>`;
         }).join("")}</div>
-      </section><div class="trail">${
+      </section><section class="voyage-board" aria-label="Odysseus’ Heimreise als Lernpfad">
+      <div class="voyage-compass" aria-hidden="true"><span>N</span><i></i></div>
+      <div class="voyage-port voyage-origin"><span>AUFBRUCH</span><strong>⚔ TROJA</strong><small>Der Krieg ist beendet.<br>Die Heimfahrt beginnt.</small></div>
+      <div class="trail">${
       stations.map((s,i)=>{
         const done=state.completed.includes(s.id), manual=teacherUnlockedStations.includes(s.id), isReleased=released(s), open=unlocked(i,stations), t=D.threads[s.thread], phase=releaseFor(s);
-        return `<button class="station" style="--thread:${t.colour}" data-station="${s.id}" ${open?"":"disabled"}>
+        const row=Math.floor(i/4)+1, column=row%2?i%4+1:4-i%4, current=open&&!done&&(i===0||state.completed.includes(stations[i-1].id));
+        return `<button class="station voyage-stop ${done?"sailed":""} ${current?"current-stop":""}" style="--thread:${t.colour};grid-row:${row};grid-column:${column}" data-station="${s.id}" ${open?"":"disabled"}>
+          <span class="waypoint" aria-hidden="true"></span>${current?'<span class="voyage-ship" aria-label="Aktuelle Position">⛵</span>':""}
           <span class="sigil">${s.symbol}</span><span class="num">SPUR ${String(i+1).padStart(2,"0")} · ${t.label}</span>
           <h3>${esc(s.title)}</h3><p class="source">${open?"ORT · "+esc(s.place):""}</p><p>${open?esc(s.discover):isReleased?"Löse zuerst die vorherige freigegebene Spur.":`Freigabe am ${dateLabel(phase.date)} · ${phase.label}`}</p>
           <span class="state">${done?"✓ REKONSTRUIERT":manual?"VON DER LEHRPERSON FREIGEGEBEN":open?"ÖFFNEN":isReleased?"VORHERIGE SPUR FEHLT":"NOCH NICHT GELESEN"}</span></button>`;
       }).join("")
-    }</div>${completeCount()===D.stations.length?renderFinal():""}`;
+    }</div><div class="voyage-port voyage-home"><span>ZIEL DER REISE</span><strong>⌂ ITHAKA</strong><small>Heimat · Identität · Frieden</small></div></section>${completeCount()===D.stations.length?renderFinal():""}`;
     view.querySelectorAll("[data-station]").forEach(b=>b.addEventListener("click",()=>openStation(b.dataset.station)));
   }
   function showThreads(){
