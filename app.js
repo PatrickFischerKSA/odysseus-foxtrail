@@ -16,7 +16,7 @@
     completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
     rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
     streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-    writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],teiresiasChats:{},teiresiasCompleted:[],final:false
+    writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],teiresiasChats:{},teiresiasCompleted:[],final:false
   };
   let activeStudentId = localStorage.getItem(ACTIVE_KEY) || "";
   let state = load();
@@ -582,6 +582,29 @@
     if(!state.teiresiasCompleted.includes(id)){state.teiresiasCompleted.push(id);record(6,`Teiresias befragt: ${item.title}`);}
     save();showTeiresias();speakOracle(answer);
   }
+  function showTheory(){
+    const t=D.srfTheory;state.theoryNotes=state.theoryNotes||{};state.theoryCompleted=state.theoryCompleted||[];
+    view.innerHTML=head("Wo war Odysseus?","INTERAKTIVES THEORIE-LABOR")+`<section class="theory-hero panel"><div><p class="eyebrow">SRF-RESSOURCEN · KRITISCH ADAPTIERT</p><h2>Kann man einen Mythos kartieren?</h2><p>Nur Troja, Kap Maleia und Ithaka erscheinen auch auf heutigen Karten. Alle weiteren Zuordnungen bleiben Rekonstruktionen. Dieses Labor verarbeitet Wolfs Route, die zwölf Ortsargumente, sechs Reisefilme und vier Gegenmodelle der SRF-Seite.</p><a href="${t.sourceUrl}" target="_blank" rel="noopener noreferrer">SRF-Originalbeitrag und Bildergalerien öffnen ↗</a></div><img src="${t.mapImage}" alt="SRF-Karte einer rekonstruierten Odysseusroute"></section>
+      <section class="theory-section"><div class="section-head"><div><p class="eyebrow">FORSCHUNGSMETHODE</p><h2>Armin Wolfs nautischer Dreischritt</h2></div></div><div class="method-flow">${t.method.map((m,i)=>`<article class="panel"><span>${m.n}</span><h3>${esc(m.title)}</h3><p>${esc(m.text)}</p>${i<t.method.length-1?'<i aria-hidden="true">→</i>':""}</article>`).join("")}</div><aside class="wolf-card panel"><img src="${t.wolfImage}" alt="Der Historiker Armin Wolf im Jahr 2015"><div><h3>Armin Wolf († 2025)</h3><p>Wolf erforschte die homerische Geografie rund fünfzig Jahre. Seine Route ist eine argumentierte Hypothese: Sie verbindet Textdaten mit realen Küsten, bleibt aber eine mögliche Deutung unter mehreren.</p></div></aside></section>
+      <section class="theory-section"><div class="section-head"><div><p class="eyebrow">12 ORTSHYPOTHESEN</p><h2>Öffne Wolfs Indizienkette</h2></div><span class="muted">Behauptung ≠ Beweis</span></div><div class="place-theory-grid">${t.wolfPlaces.map((p,i)=>`<details class="place-theory panel"><summary><span>${String(i+1).padStart(2,"0")}</span><div><strong>${esc(p.name)}</strong><small>${esc(p.place)}</small></div></summary><p>${esc(p.claim)}</p><div class="evidence"><strong>Verwendetes Indiz</strong>${esc(p.evidence)}</div></details>`).join("")}</div></section>
+      <section class="theory-section srf-screening"><div class="section-head"><div><p class="eyebrow">SRF-REISEGESCHICHTEN · 6 FOLGEN</p><h2>Das Mittelmeer als Prüfstrecke</h2></div></div><div class="screening-layout"><div class="screening-player"><iframe id="srfVideoFrame" title="SRF Reisegeschichten" src="https://www.srf.ch/play/embed?urn=${encodeURIComponent(t.videos[0].urn)}" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe><p id="srfVideoFocus">Beobachtungsauftrag: ${esc(t.videos[0].focus)}</p></div><div class="episode-list">${t.videos.map((v,i)=>`<button data-srf-video="${i}" class="${i===0?"active":""}"><span>FOLGE ${i+1}</span><strong>${esc(v.title)}</strong><small>${esc(v.focus)}</small></button>`).join("")}</div></div></section>
+      <section class="theory-section"><div class="section-head"><div><p class="eyebrow">KONKURRIERENDE KARTEN</p><h2>Vier andere Odysseen</h2></div></div><div class="thesis-deck">${t.alternatives.map(a=>`<article class="panel"><span>${esc(a.date)}</span><h3>${esc(a.name)}</h3><strong>${esc(a.route)}</strong><p>${esc(a.method)}</p></article>`).join("")}</div></section>
+      <section class="theory-section voss-lab"><div class="section-head"><div><p class="eyebrow">VOM GRIECHISCHEN EPOS ZUR DEUTSCHEN STIMME</p><h2>Wie Voß’ «Odyssee» entstand</h2></div><a class="resource-link" href="assets/media/homer-odyssee-voss.pdf" target="_blank">Voß-Ausgabe als PDF öffnen ↗</a></div><div class="transmission-path">
+        <article><span>1</span><strong>Mündliche epische Tradition</strong><p>Formelhafte Wendungen und Hexameter helfen Sängern, Stoffe über Generationen vorzutragen und dabei zu verändern.</p></article>
+        <article><span>2</span><strong>Griechischer Epostext</strong><p>Die «Odyssee», traditionell Homer zugeschrieben und meist ins späte 8. Jahrhundert v. Chr. datiert, wird schriftlich fixiert und weiter überliefert.</p></article>
+        <article><span>3</span><strong>Edition und Handschriften</strong><p>Antike Gelehrte ordnen den Text in 24 Gesänge; Abschriften, Lesarten und spätere Druckausgaben vermitteln den griechischen Wortlaut.</p></article>
+        <article><span>4</span><strong>Voß übersetzt 1781</strong><p>Johann Heinrich Voß arbeitet direkt am Griechischen. Er will nicht bloss den Inhalt, sondern auch Homers epischen Hexameter im Deutschen hörbar machen.</p></article>
+        <article><span>5</span><strong>Revision 1793</strong><p>Voß überarbeitet die «Odyssee» und veröffentlicht sie zusammen mit seiner «Ilias». Die formnahe Sprache prägt das deutsche Homerbild nachhaltig.</p></article>
+      </div><div class="voss-sample panel"><p class="eyebrow">ÜBERSETZUNGSWERKSTATT</p><blockquote>«Sage mir, Muse, die Taten des vielgewanderten Mannes …»</blockquote><p>Die Anrufung der Muse, die auffällige Wortstellung, Zusammensetzungen wie «vielgewandert» und ein sechshebiger Versgang sollen Nähe zum griechischen Epos schaffen. Ältere Schreibungen und syntaktische Umstellungen zeigen zugleich: Übersetzen ist keine neutrale Kopie, sondern eine historische Gestaltung.</p><div class="translation-scale"><span>griechische Form</span><i></i><span>deutsche Verständlichkeit</span></div></div></section>
+      <section class="theory-section"><div class="section-head"><div><p class="eyebrow">8 OFFENE FORSCHUNGSAUFTRÄGE</p><h2>${state.theoryCompleted.length} von ${t.tasks.length} bearbeitet</h2></div></div><div class="theory-task-grid">${t.tasks.map((q,i)=>{const note=state.theoryNotes[q.id]||"",done=state.theoryCompleted.includes(q.id);return `<article class="panel theory-task ${done?"done":""}"><p class="source">AUFTRAG ${i+1}</p><h3>${esc(q.title)}</h3><p>${esc(q.prompt)}</p><textarea data-theory-note="${q.id}" rows="6" placeholder="Argumentiere in eigenen Worten …">${esc(note)}</textarea><div class="theory-task-actions"><span data-theory-count="${q.id}">${note.length}/${q.min} Zeichen</span><button class="primary" data-complete-theory="${q.id}" ${done?"disabled":""}>${done?"Gesichert ✓":"Antwort sichern · +6 Eulen"}</button></div><div data-theory-feedback="${q.id}"></div></article>`}).join("")}</div></section>
+      <section class="theory-section panel"><p class="eyebrow">WEITERE SRF-RESSOURCEN</p><div class="theory-links">${t.related.map(r=>`<a href="${r.url}" target="_blank" rel="noopener noreferrer"><span>${esc(r.kind)}</span><strong>${esc(r.title)}</strong></a>`).join("")}</div><p class="muted">Bild- und Medienrechte verbleiben bei SRF und den dort genannten Rechteinhabern. Die Medien werden über die offiziellen SRF-Seiten beziehungsweise Player bereitgestellt.</p></section>`;
+    bindTheory();
+  }
+  function bindTheory(){
+    document.querySelectorAll("[data-srf-video]").forEach(button=>button.addEventListener("click",()=>{const index=+button.dataset.srfVideo,v=D.srfTheory.videos[index];document.querySelector("#srfVideoFrame").src=`https://www.srf.ch/play/embed?urn=${encodeURIComponent(v.urn)}`;document.querySelector("#srfVideoFocus").textContent=`Beobachtungsauftrag: ${v.focus}`;document.querySelectorAll("[data-srf-video]").forEach(x=>x.classList.toggle("active",x===button))}));
+    document.querySelectorAll("[data-theory-note]").forEach(area=>area.addEventListener("input",()=>{state.theoryNotes[area.dataset.theoryNote]=area.value;const q=D.srfTheory.tasks.find(x=>x.id===area.dataset.theoryNote);document.querySelector(`[data-theory-count="${q.id}"]`).textContent=`${area.value.length}/${q.min} Zeichen`;save()}));
+    document.querySelectorAll("[data-complete-theory]").forEach(button=>button.addEventListener("click",()=>{const q=D.srfTheory.tasks.find(x=>x.id===button.dataset.completeTheory),note=(state.theoryNotes[q.id]||"").trim(),feedback=document.querySelector(`[data-theory-feedback="${q.id}"]`);if(note.length<q.min){feedback.innerHTML=`<div class="feedback bad">Entwickle deine Argumentation auf mindestens ${q.min} Zeichen.</div>`;return}if(!state.theoryCompleted.includes(q.id)){state.theoryCompleted.push(q.id);record(6,`Theorie-Labor: ${q.title}`);save();showTheory()}}));
+  }
   function showMedia(){
     const m=D.mediaResource;
     view.innerHTML=head(m.title,"ERGÄNZENDE MULTIMEDIA-SPUR")+`<div class="media-layout">
@@ -705,15 +728,15 @@
   }
   function setView(name){
     document.querySelectorAll("nav [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===name?"page":"false"));
-    if(["threads","media","writing"].includes(name)&&currentReadingLimit()!==Infinity&&!teacherPinSession){
+    if(["threads","theory","media","writing"].includes(name)&&currentReadingLimit()!==Infinity&&!teacherPinSession){
       view.innerHTML=head("Noch nicht freigegeben","LESEPLAN 2026")+`<section class="panel reading-lock"><div class="reward">⌛</div>
         <h3>Dieser Lernbereich setzt die vollständige Lektüre voraus.</h3>
-        <p>Erzählstränge und Heldenreise, die Video-Aufgaben sowie das kreative Schreibprojekt enthalten Wissen aus dem ganzen Buch. Sie werden am <strong>21.09.2026</strong> freigeschaltet.</p>
+        <p>Erzählstränge und Heldenreise, das Theorie-Labor, die Video-Aufgaben sowie das kreative Schreibprojekt enthalten Wissen aus dem ganzen Buch. Sie werden am <strong>21.09.2026</strong> freigeschaltet.</p>
         <button class="primary" data-view="trail">Zu den aktuellen Textspuren</button></section>`;
       view.querySelector("[data-view=trail]").addEventListener("click",()=>setView("trail"));
       view.focus({preventScroll:true});return;
     }
-    ({trail:showTrail,threads:showThreads,route:showRoute,characters:showCharacters,clues:showClues,teiresias:showTeiresias,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
+    ({trail:showTrail,threads:showThreads,route:showRoute,theory:showTheory,characters:showCharacters,clues:showClues,teiresias:showTeiresias,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
     view.focus({preventScroll:true});
   }
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
@@ -730,7 +753,7 @@
     if(confirm("Den gesamten lokalen Fortschritt wirklich löschen?")){
       state={...initial,completed:[],taskResults:{},hints:{},attempts:{},clues:[],achievements:[],rewardedAchievements:[],
         transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-        writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
+        writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
     }
   });
   updateHeader();showTrail();loadTeacherUnlocks().then(showTrail);if(!activeStudentId)window.setTimeout(openLogin,250);

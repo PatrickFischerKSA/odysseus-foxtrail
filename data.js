@@ -545,5 +545,60 @@ window.ODYSSEUS_DATA = (() => {
     {id:"ruhm",title:"VI · Ruhm im Schattenreich",source:"PDF-Seiten 52–54",opening:"Glänzender Ruhm wird im Reich der Schatten kalt … und alter Groll schweigt länger als ein Leben.",guide:"Frage nach Achilleus’ Urteil über Leben und Tod oder nach Aias’ Schweigen.",terms:["achilleus","aias","ajax","ruhm","ehre","leben","tod","schweigen","groll"],answer:"Achilleus sagt selbst, er wäre lieber ein armer Knecht unter Lebenden als Herrscher über die Toten. Aias dagegen verweigert Odysseus aus altem Groll jedes Wort. Beide Begegnungen widersprechen einem einfachen Heldenruhm: Der Tod entzaubert Ruhm, und ungeklärte Kränkung überdauert sogar das Leben. Diese Stimmen gehören Achilleus und Aias – ich deute nur ihre Spur."}
   ];
 
-  return {threads,chapters,characters,locations,events,stations,achievements,finalPuzzle,mediaResource,heroJourney,writingProject,teiresiasInterrogations};
+  const srfTheory = {
+    sourceUrl:"https://www.srf.ch/kultur/literatur/die-route-der-odysee-die-irrfahrt-wo-war-odysseus-eigentlich",
+    mapImage:"https://www.srf.ch/static/cms/images/960w/dea0c3.jpg",
+    wolfImage:"https://www.srf.ch/static/cms/images/480w/233c05.webp",
+    method:[
+      {n:"01",title:"Textdaten sammeln",text:"Armin Wolf liest nautische Angaben: Himmels- und Windrichtungen, Segeln oder Rudern sowie genannte Reisetage und Fahrtdauern."},
+      {n:"02",title:"Geometrisches Muster",text:"Kräftiger Wind ergibt lange Geraden, Ruderfahrt kurze Strecken. Aus diesen Relationen entsteht zunächst eine abstrakte Route."},
+      {n:"03",title:"Mit Realität abgleichen",text:"Das Muster wird von Troja aus über das Mittelmeer gelegt und danach mit Strömungen, Küstenformen, Natur, Kultur und Archäologie verglichen."}
+    ],
+    wolfPlaces:[
+      {name:"Troja",place:"bei Çanakkale, Türkei",claim:"Realer Ausgangspunkt an den strategisch wichtigen Dardanellen.",evidence:"Ortsname und Ruinen sind lokalisierbar."},
+      {name:"Lotophagen",place:"Djerba, Tunesien",claim:"Nordwind und Strömung könnten die Schiffe nach Nordafrika versetzt haben.",evidence:"Dattelwein wird als mögliche Spur zur vergessensstiftenden Lotusfrucht gelesen."},
+      {name:"Kyklopen",place:"Kerkennah und Matmata",claim:"Die Strömung führt von Djerba zu einer niedrigen Insel vor einem höhlenreichen Festland.",evidence:"Höhlenwohnungen und Ziegenhaltung erinnern an einzelne Textmerkmale."},
+      {name:"Aiolos",place:"Malta / Marsaxlokk",claim:"Klippen, ein südöstlicher Hafen und die mögliche direkte Westwindfahrt nach Ithaka stützen Wolfs Zuordnung.",evidence:"Homerische Mauer- und Hafenmerkmale werden mit Maltas Südküste verglichen."},
+      {name:"Laistrygonen",place:"Mozia bei Marsala",claim:"Ruderfahrt und Westdrift führen zu einer flachen Hafenbucht mit phönizischen Ruinen.",evidence:"Die lokale Thunfischjagd mit Lanzen wird als kulturelle Parallele gedeutet."},
+      {name:"Kirke / Aiaia",place:"Ustica",claim:"Von Mozia nordöstlich liegt Ustica als einzige Insel der Region weit im Meer.",evidence:"Lage und Inselcharakter entsprechen ausgewählten Angaben der Dichtung."},
+      {name:"Hades",place:"Himera, Sizilien",claim:"Zwei Flüsse münden nahe einer antiken Kultstätte zusammen.",evidence:"Wolf deutet den Hades möglicherweise als Kult- und Opferplatz statt als geografische Unterwelt."},
+      {name:"Sirenen",place:"Capo Peloro",claim:"Eine gefährliche Küste vor der Strasse von Messina könnte hinter der Sirenenepisode stehen.",evidence:"Abstandsregeln und Überlieferungen über ausgeraubte Strandungen bilden reale Gefahren."},
+      {name:"Skylla, Charybdis, Helios",place:"Strasse von Messina",claim:"Zwei Meere erzeugen Strudel, Wellen und starke Gezeitenströme.",evidence:"Scilla als Ortsname und die riskante Meerenge passen besonders deutlich."},
+      {name:"Kalypso / Ogygia",place:"Liparische Inseln",claim:"Von Griechenland aus liegt Ogygia laut dieser Lesart hinter, also nördlich der Meerenge.",evidence:"Wolf widerspricht damit der touristischen Zuordnung zu Gozo, bleibt hier aber selbst besonders unsicher."},
+      {name:"Phaiaken",place:"Kalabrien",claim:"Schérie werde als Festland beschrieben; Kalabrien liege zwischen zwei Meeren und gleiche einem Schild.",evidence:"Küstenform, Wortdeutung und direkte Fahrtmöglichkeit nach Ithaka werden kombiniert."},
+      {name:"Ithaka",place:"Ithaka / Kefalonia",claim:"Kefalonia verdeckt bei der Anfahrt aus Kalabrien die Sicht auf Ithaka.",evidence:"Die Nachbarinsel besitzt zudem mehr archäologische Funde; selbst das Ziel bleibt daher Teil der Debatte."}
+    ],
+    videos:[
+      {title:"Von der Türkei nach Djerba",urn:"urn:srf:video:1ba522bc-ba95-45fa-866e-4ae3e03a8b71",focus:"Troja, Aufbruch, Wind und Fehlkurs"},
+      {title:"Von Tunesien nach Malta",urn:"urn:srf:video:e5e202a2-e775-4758-8bdf-0fb1896ef7b6",focus:"Lotophagen, Höhlenräume und Aiolos"},
+      {title:"Von Malta nach Sizilien",urn:"urn:srf:video:0ff58db5-3aad-4029-b721-4b10a21821b1",focus:"Häfen, Strömung und Laistrygonen"},
+      {title:"Via Palermo auf die Insel Ustica",urn:"urn:srf:video:a1016772-26bf-4685-ba35-99bcac047cb9",focus:"Kirke, Inselraum und mögliche Kultorte"},
+      {title:"Durch den Stretto di Messina auf Lipari",urn:"urn:srf:video:8201eda5-d3ee-47c7-8772-3a4e49d1e712",focus:"Sirenen, Skylla, Charybdis und Kalypso"},
+      {title:"Durch Kalabrien auf die Insel Ithaka",urn:"urn:srf:video:aafe24b7-a34c-424f-95f4-40757a17137f",focus:"Phaiakenland, letzte Überfahrt und Heimat"}
+    ],
+    alternatives:[
+      {name:"Victor Bérard",date:"1927–1929",route:"Phönizische Seewege im Mittelmeer",method:"Er behandelt Homers Dichtung als relativ genaue Erinnerung an Seerouten, erklärt Widersprüche aber teilweise mit Ungenauigkeiten Homers."},
+      {name:"Ernle Bradford",date:"1963",route:"Ersegelte Mittelmeerroute",method:"Der frühere Navigator prüfte Fahrtleistung, Zeit- und Streckenangaben während eigener jahrelanger Segelreisen."},
+      {name:"Felice Vinci",date:"1995",route:"Baltikum und Skandinavien",method:"Ortsnamen und eine angenommene Migration sollen nördliche Mythen nach Griechenland gebracht haben."},
+      {name:"Mertz / Petrides",date:"1964 / 1994",route:"Atlantik bis Nordamerika",method:"Golfstrom und Fernfahrt werden zur These verbunden, Griechen hätten Amerika erreicht; die Deutung ist besonders spekulativ."}
+    ],
+    tasks:[
+      {id:"srf-method",title:"Vom Vers zur Koordinate",prompt:"Erkläre Wolfs drei Arbeitsschritte und nenne bei jedem Schritt eine mögliche Fehlerquelle.",min:160},
+      {id:"srf-evidence",title:"Indiz oder Beweis?",prompt:"Wähle zwei der zwölf Orte. Ordne die jeweiligen Argumente als Textindiz, Naturbeobachtung, Namensähnlichkeit, Kulturparallele oder Archäologie ein. Begründe, weshalb daraus noch kein Beweis entsteht.",min:200},
+      {id:"srf-tourism",title:"Mythos als Standortwerbung",prompt:"Vergleiche eine touristische Tradition wie Gozo, Korfu oder die Zyklopenküste mit Wolfs Methode. Welche Interessen und welche Belege wirken jeweils?",min:170},
+      {id:"srf-video",title:"Reisebeobachtung",prompt:"Sieh mindestens eine SRF-Folge. Notiere eine Beobachtung zu Landschaft oder Seefahrt und verknüpfe sie mit einer konkreten Stelle aus Lechner.",min:180},
+      {id:"srf-theses",title:"Vier Karten, vier Odysseen",prompt:"Vergleiche Wolf mit einer alternativen Route. Welche Annahme steuert jeweils das Ergebnis, und welche These wirkt nachvollziehbarer?",min:190},
+      {id:"srf-verdict",title:"Urteil der Kartenkammer",prompt:"Formuliere ein begründetes Schlussurteil: Soll man die Irrfahrt überhaupt auf einer modernen Karte festlegen? Trenne literarischen Nutzen von historischer Gewissheit.",min:220},
+      {id:"voss-process",title:"Vom griechischen Epos zu Voß",prompt:"Erkläre die Überlieferungskette von der mündlichen Dichtung über den griechischen Text bis zu Voß’ deutscher Hexameterübersetzung. Wo entstehen Veränderungen?",min:220},
+      {id:"voss-language",title:"Übersetzen heisst entscheiden",prompt:"Untersuche am Beginn «Sage mir, Muse …» Wortstellung, Rhythmus und ältere Schreibweisen. Was gewinnt und was erschwert Voß’ formnahe Übersetzung?",min:180}
+    ],
+    related:[
+      {title:"SRF-Audio: «The Odyssey» – Fantasydrama mit Starbesetzung",url:"https://www.srf.ch/play/radio/redirect/detail/urn:srf:audio:278847c2-9763-4f72-8f82-80dbb5f34de9",kind:"Audio · 4:41"},
+      {title:"Ithaka – wo liegt Odysseus’ wahre Heimat?",url:"https://www.srf.ch/sendungen/reisegeschichten/reisegeschichten-ithaka-wo-liegt-odysseus-wahre-heimat",kind:"Vertiefung"},
+      {title:"Die Odyssee animiert",url:"https://www.srf.ch/school?search=Die%20Odyssee%20animiert",kind:"SRF school"},
+      {title:"IMAX, Mythen, Megacast: «The Odyssey»",url:"https://www.srf.ch/kultur/film-serien/neu-im-kino-imax-mythen-megacast-the-odyssey-setzt-massstaebe",kind:"Filmbezug"}
+    ]
+  };
+
+  return {threads,chapters,characters,locations,events,stations,achievements,finalPuzzle,mediaResource,heroJourney,writingProject,teiresiasInterrogations,srfTheory};
 })();

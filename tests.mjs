@@ -17,6 +17,11 @@ const pagesFrom=text=>{
 if(d.stations.length!==28)errors.push(`erwartet 28 Stationen, gefunden ${d.stations.length}`);
 if(d.teiresiasInterrogations?.length!==6)errors.push(`erwartet 6 Teiresias-Befragungen, gefunden ${d.teiresiasInterrogations?.length||0}`);
 if(d.heroJourney?.phases?.length!==12)errors.push(`erwartet 12 Heldenreise-Stufen, gefunden ${d.heroJourney?.phases?.length||0}`);
+if(d.srfTheory?.wolfPlaces?.length!==12)errors.push("SRF-Theorieblock enthält nicht alle 12 Ortsstationen");
+if(d.srfTheory?.videos?.length!==6)errors.push("SRF-Theorieblock enthält nicht alle 6 Reisefolgen");
+if(d.srfTheory?.alternatives?.length!==4)errors.push("SRF-Theorieblock enthält nicht alle 4 Alternativthesen");
+if(d.srfTheory?.tasks?.length!==8)errors.push("SRF-Theorieblock enthält nicht 8 offene Aufgaben");
+if((d.srfTheory?.tasks||[]).some(q=>!q.prompt||!q.min||q.min<100))errors.push("SRF-Theorieaufgabe unvollständig");
 const journeyPhaseIds=new Set((d.heroJourney?.phases||[]).map(x=>x.id));
 for(const phase of d.heroJourney?.phases||[])if(!phase.concept||!phase.events||!phase.meaning||!phase.workshopPrompt||!phase.fit)errors.push(`Heldenreise-Stufe unvollständig: ${phase.id}`);
 for(const task of d.heroJourney?.tasks||[])for(const id of task.phaseIds)if(!journeyPhaseIds.has(id))errors.push(`Unbekannte Heldenreise-Stufe ${id} in ${task.id}`);
