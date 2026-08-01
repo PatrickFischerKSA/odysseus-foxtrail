@@ -277,6 +277,7 @@
   }
   function showTrail(){
     const stations=readingStations(), limit=currentReadingLimit();
+    const voyagePositions=[[12,165],[33,120],[55,225],[78,135],[89,315],[69,385],[44,305],[20,405],[10,585],[31,525],[57,625],[83,535],[91,735],[70,805],[47,705],[23,815],[9,1005],[32,925],[56,1045],[82,945],[91,1160],[68,1245],[45,1135],[20,1240],[10,1435],[35,1355],[60,1480],[84,1385]];
     const available=stations.filter(released).length;
     const activePhase=[...READING_PLAN].reverse().find(phase=>new Date()>=phaseDate(phase));
     view.innerHTML=head("Die zerrissene Spur","FOXTRAIL-KARTE")+`
@@ -294,7 +295,7 @@
       <div class="map-port map-troja" data-route-point><span>START</span><strong>TROJA</strong><small>Der Krieg ist vorbei</small></div>${
       stations.map((s,i)=>{
         const done=state.completed.includes(s.id), manual=teacherUnlockedStations.includes(s.id), isReleased=released(s), open=unlocked(i,stations), t=D.threads[s.thread], phase=releaseFor(s);
-        const row=Math.floor(i/4), slot=i%4, x=(row%2?88-slot*25.5:11+slot*25.5), y=180+row*190+(slot%2?18:-12), current=open&&!done&&(i===0||state.completed.includes(stations[i-1].id));
+        const [x,y]=voyagePositions[i], current=open&&!done&&(i===0||state.completed.includes(stations[i-1].id));
         return `<button class="journey-node ${done?"sailed":""} ${current?"current-node":""}" style="--thread:${t.colour};left:${x}%;top:${y}px" data-route-point data-station="${s.id}" ${open?"":"disabled"} aria-label="Spur ${i+1}: ${esc(s.title)}">
           ${current?'<span class="map-ship" aria-hidden="true">⛵</span>':""}<span class="node-disc"><i>${done?"✓":s.symbol}</i><b>${String(i+1).padStart(2,"0")}</b></span>
           <span class="node-label"><strong>${esc(s.title)}</strong><small>${open?esc(s.place):isReleased?"Vorherige Spur fehlt":`ab ${dateLabel(phase.date)}`}</small></span></button>`;
@@ -307,7 +308,7 @@
     const sea=document.querySelector(".voyage-sea"),canvas=document.querySelector("#voyageRoute");if(!sea||!canvas)return;
     const ratio=window.devicePixelRatio||1,box=sea.getBoundingClientRect();canvas.width=box.width*ratio;canvas.height=box.height*ratio;canvas.style.width=box.width+"px";canvas.style.height=box.height+"px";
     const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const points=[...sea.querySelectorAll("[data-route-point]")].map(node=>{const r=node.getBoundingClientRect();return{x:r.left-box.left+r.width/2,y:r.top-box.top+r.height/2}});
-    const path=(end,color,width,dash)=>{ctx.beginPath();points.slice(0,end).forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin="round";ctx.lineCap="round";ctx.setLineDash(dash);ctx.stroke()};
+    const path=(end,color,width,dash)=>{const route=points.slice(0,end);if(route.length<2)return;ctx.beginPath();ctx.moveTo(route[0].x,route[0].y);for(let i=1;i<route.length-1;i++){const next=route[i+1],mid={x:(route[i].x+next.x)/2,y:(route[i].y+next.y)/2};ctx.quadraticCurveTo(route[i].x,route[i].y,mid.x,mid.y)}const last=route.at(-1),before=route.at(-2);ctx.quadraticCurveTo(before.x,before.y,last.x,last.y);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin="round";ctx.lineCap="round";ctx.setLineDash(dash);ctx.stroke()};
     path(points.length,"rgba(126,183,197,.42)",4,[5,11]);path(Math.min(completeCount()+2,points.length),"rgba(113,213,167,.9)",5,[]);
   }
   function showThreads(){
