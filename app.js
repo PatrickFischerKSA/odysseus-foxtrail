@@ -438,14 +438,54 @@
     window.setTimeout(()=>map.invalidateSize({pan:false}),250);
   }
   function showCharacters(){
-    const n=Math.min(D.characters.length,4+completeCount()*2);
-    view.innerHTML=head("Freischaltbares Figurenarchiv",`${n} VON ${D.characters.length} KARTEN SICHTBAR`)+`<div class="character-grid">${
-      D.characters.map((c,i)=>i<n?`<article class="character-card" style="--thread:${i<3?D.threads[["odysseus","ithaka","telemachos"][i]].colour:"var(--bronze)"}">
-        <span class="chip">${c.kind}</span><span class="chip">${c.status}</span><h3>${c.name}</h3>
-        <p><strong>Rolle:</strong> ${esc(c.role)}<br><strong>Ziel:</strong> ${esc(c.goal)}<br><strong>Schlüsselhandlung:</strong> ${esc(c.action)}</p>
-        <span class="chip">${c.symbol}</span><span class="chip">Quelle nach Stationslösung</span></article>`
-        :`<article class="character-card locked"><h3>Versiegelte Karte</h3><p>Löse weitere Stationen, um diese Figur zu identifizieren.</p></article>`).join("")
-    }</div>`;
+    const people={}; D.characters.forEach(c=>people[c.id]=c);
+    const nodes=[
+      ["laertes",9,15,"ithaka"],["odysseus",28,29,"ithaka"],["penelope",28,8,"ithaka"],["telemachos",48,18,"ithaka"],
+      ["eurykleia",29,50,"allies"],["eumaios",50,48,"allies"],["antinoos",72,12,"foes"],["eurymachos",88,24,"foes"],
+      ["zeus",8,72,"gods"],["athene",29,71,"gods"],["poseidon",51,72,"gods"],["polyphem",72,64,"gods"],["hermes",89,78,"gods"],
+      ["alkinoos",9,91,"phaeacians"],["arete",29,91,"phaeacians"],["nausikaa",50,91,"phaeacians"]
+    ];
+    const links=[
+      ["laertes","odysseus","family","Vater und Sohn"],["odysseus","penelope","family","Ehepaar"],["odysseus","telemachos","family","Vater und Sohn"],["penelope","telemachos","family","Mutter und Sohn"],
+      ["eurykleia","odysseus","ally","Amme und Schützling"],["eurykleia","telemachos","ally","Amme und Schützling"],["eumaios","odysseus","ally","treuer Diener seines Hauses"],
+      ["antinoos","penelope","conflict","bedrängt Penelope als Freier"],["eurymachos","penelope","conflict","bedrängt Penelope als Freier"],["antinoos","telemachos","conflict","Rivale im Haus"],
+      ["zeus","athene","family","Vater und Tochter"],["zeus","poseidon","family","Brüder"],["athene","odysseus","divine","Schutz und Rat"],["poseidon","odysseus","conflict","Gegenspieler auf dem Meer"],["poseidon","polyphem","family","Vater und Sohn"],["hermes","odysseus","divine","göttlicher Bote und Helfer"],
+      ["alkinoos","arete","family","Ehepaar"],["alkinoos","nausikaa","family","Vater und Tochter"],["arete","nausikaa","family","Mutter und Tochter"],["nausikaa","odysseus","ally","hilft dem Fremden"]
+    ];
+    const trees={
+      ithaka:{label:"Haus Ithaka",ids:["laertes","odysseus","penelope","telemachos","eurykleia","eumaios"]},
+      gods:{label:"Götterfamilien",ids:["zeus","athene","poseidon","polyphem","hermes","odysseus"]},
+      phaeacians:{label:"Haus der Phaiaken",ids:["alkinoos","arete","nausikaa","odysseus"]},
+      all:{label:"Ganzes Netz",ids:nodes.map(n=>n[0])}
+    };
+    view.innerHTML=head("Personennetz & Stammbäume","VON BEGINN AN FREI · SPOILERARME ORIENTIERUNG")+`
+      <section class="kinship-intro panel"><div><p class="eyebrow">ATHENES PERSONENKARTE</p><h3>Wer gehört zu wem?</h3><p>Wähle einen Stammbaum oder tippe eine Figur an. Das Netz hebt ihre direkten Beziehungen hervor. Es zeigt Rollen und Verwandtschaft, aber verrät keine späteren Schicksalsausgänge.</p></div><span class="always-open">∞ immer verfügbar</span></section>
+      <div class="kinship-tabs" role="tablist" aria-label="Stammbäume">${Object.entries(trees).map(([id,t],i)=>`<button type="button" role="tab" data-tree="${id}" aria-selected="${i===0}">${t.label}</button>`).join("")}</div>
+      <section class="kinship-layout">
+        <div class="kinship-map" id="kinshipMap"><canvas aria-hidden="true"></canvas>${nodes.map(([id,x,y,group])=>`<button type="button" class="person-node group-${group}" data-person="${id}" style="--x:${x}%;--y:${y}%" aria-label="${people[id].name}: ${esc(people[id].role)}"><span>${people[id].symbol}</span><strong>${people[id].name}</strong></button>`).join("")}</div>
+        <aside class="person-focus" id="personFocus" aria-live="polite"><p class="eyebrow">LESEHILFE</p><h3>Figur auswählen</h3><p>Tippe im Diagramm auf einen Namen. Hier erscheinen Rolle und direkte Beziehungen.</p></aside>
+      </section>
+      <div class="relation-legend"><span class="family">Familie / Ehe</span><span class="ally">Hilfe / Treue</span><span class="divine">göttlicher Beistand</span><span class="conflict">Konflikt</span></div>`;
+    const map=view.querySelector("#kinshipMap"), canvas=map.querySelector("canvas"), focus=view.querySelector("#personFocus");
+    let activeTree="ithaka", selected="";
+    function visibleIds(){return new Set(trees[activeTree].ids)}
+    function draw(){
+      const scale=window.devicePixelRatio||1, rect=map.getBoundingClientRect();
+      canvas.width=rect.width*scale; canvas.height=rect.height*scale; canvas.style.width=`${rect.width}px`; canvas.style.height=`${rect.height}px`;
+      const ctx=canvas.getContext("2d"); ctx.scale(scale,scale); ctx.clearRect(0,0,rect.width,rect.height);
+      const visible=visibleIds();
+      links.forEach(([a,b,type])=>{if(!visible.has(a)||!visible.has(b))return; const A=map.querySelector(`[data-person="${a}"]`).getBoundingClientRect(),B=map.querySelector(`[data-person="${b}"]`).getBoundingClientRect();
+        ctx.beginPath();ctx.moveTo(A.left-rect.left+A.width/2,A.top-rect.top+A.height/2);ctx.bezierCurveTo(A.left-rect.left+A.width/2,(A.top+B.top)/2-rect.top,B.left-rect.left+B.width/2,(A.top+B.top)/2-rect.top,B.left-rect.left+B.width/2,B.top-rect.top+B.height/2);
+        ctx.strokeStyle={family:"rgba(224,179,96,.75)",ally:"rgba(73,182,200,.72)",divine:"rgba(154,134,216,.8)",conflict:"rgba(196,92,107,.72)"}[type];ctx.lineWidth=type==="family"?3:2;ctx.setLineDash(type==="conflict"?[7,6]:[]);ctx.stroke();
+      });
+    }
+    function update(){
+      const visible=visibleIds(); map.querySelectorAll("[data-person]").forEach(el=>{const id=el.dataset.person;el.hidden=!visible.has(id);el.classList.toggle("selected",id===selected);el.classList.toggle("related",!!selected&&links.some(l=>(l[0]===selected&&l[1]===id)||(l[1]===selected&&l[0]===id)));el.classList.toggle("dimmed",!!selected&&id!==selected&&!el.classList.contains("related"))});
+      view.querySelectorAll("[data-tree]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tree===activeTree)); draw();
+    }
+    view.querySelectorAll("[data-tree]").forEach(b=>b.addEventListener("click",()=>{activeTree=b.dataset.tree;selected="";focus.innerHTML=`<p class="eyebrow">${trees[activeTree].label.toUpperCase()}</p><h3>Stammbaum erkunden</h3><p>Wähle eine Figur, um ihre Beziehungen in diesem Teil des Netzes zu untersuchen.</p>`;update()}));
+    map.querySelectorAll("[data-person]").forEach(b=>b.addEventListener("click",()=>{selected=b.dataset.person;const c=people[selected], related=links.filter(l=>l[0]===selected||l[1]===selected).filter(l=>visibleIds().has(l[0])&&visibleIds().has(l[1]));focus.innerHTML=`<p class="eyebrow">${esc(c.kind)} · ${c.symbol}</p><h3>${esc(c.name)}</h3><p>${esc(c.role)}</p><h4>Direkte Beziehungen</h4><ul>${related.map(l=>{const other=people[l[0]===selected?l[1]:l[0]];return `<li><button type="button" data-jump="${other.id}"><strong>${other.name}</strong></button><span>${esc(l[3])}</span></li>`}).join("")||"<li>In diesem Ausschnitt keine weitere Verbindung.</li>"}</ul>`;focus.querySelectorAll("[data-jump]").forEach(j=>j.addEventListener("click",()=>map.querySelector(`[data-person="${j.dataset.jump}"]`).click()));update()}));
+    const observer=new ResizeObserver(draw);observer.observe(map);update();
   }
   function showClues(){
     deriveAchievements();

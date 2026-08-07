@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import vm from "node:vm";
 const source=fs.readFileSync(new URL("./data.js",import.meta.url),"utf8");
+const appSource=fs.readFileSync(new URL("./app.js",import.meta.url),"utf8");
+const htmlSource=fs.readFileSync(new URL("./index.html",import.meta.url),"utf8");
 const sandbox={window:{}};vm.runInNewContext(source,sandbox);
 const d=sandbox.window.ODYSSEUS_DATA;
 const tasks=d.stations.flatMap(s=>s.tasks.map(q=>({s,q})));
@@ -35,6 +37,9 @@ for(const oracle of d.teiresiasInterrogations||[]){
 }
 if(tasks.length!==84)errors.push(`erwartet 84 Aufgaben, gefunden ${tasks.length}`);
 if(d.characters.length<20)errors.push("weniger als 20 Figuren");
+if(!htmlSource.includes('data-view="characters">Personennetz'))errors.push("Personennetz fehlt in der Hauptnavigation");
+if(!appSource.includes('VON BEGINN AN FREI · SPOILERARME ORIENTIERUNG'))errors.push("Personennetz ist nicht als freie Lesehilfe gekennzeichnet");
+for(const tree of ["Haus Ithaka","Götterfamilien","Haus der Phaiaken","Ganzes Netz"])if(!appSource.includes(tree))errors.push(`Stammbaum fehlt: ${tree}`);
 if(tasks.some(x=>!["text","order"].includes(x.q.type)))errors.push("nicht-offener Aufgabentyp vorhanden");
 if(tasks.some(x=>["choice","multi","timeline","match"].includes(x.q.type)))errors.push("Auswahlaufgabe vorhanden");
 if(new Set(d.stations.flatMap(s=>s.chapter)).size!==11)errors.push("nicht alle 11 Kapitel");
