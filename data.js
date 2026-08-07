@@ -600,5 +600,32 @@ window.ODYSSEUS_DATA = (() => {
     ]
   };
 
-  return {threads,chapters,characters,locations,events,stations,achievements,finalPuzzle,mediaResource,heroJourney,writingProject,teiresiasInterrogations,srfTheory};
+  const podcastLab = {
+    title:"Tatort Geschichte: Odysseus unter Verdacht",
+    intro:"Zwei True-Crime-Podcasts prüfen nicht nur, was Odysseus erlebt, sondern was er selbst tut. Das Labor behandelt die Folgen als deutende Sekundärquellen: Jede Behauptung muss am gelesenen Text kontrolliert werden.",
+    contentNote:"Die Folgen behandeln Krieg, Tötungen, sexualisierte Macht, Täuschung und Rache. Die Aufgaben verlangen keine anschauliche Wiedergabe von Gewalt. Wer eine Szene nicht nochmals hören möchte, darf mit Buchbelegen und den Leitfragen arbeiten.",
+    listeningRules:[
+      "Podcastaussagen werden als These notiert, nicht als historische Tatsache.",
+      "Zu jeder Bewertung gehört ein konkreter Beleg aus Lechner oder Voß.",
+      "Erklären bedeutet nicht entschuldigen; verurteilen ersetzt keine Textanalyse.",
+      "Göttlicher Auftrag, antike Norm und heutiges Urteil werden getrennt betrachtet."
+    ],
+    episodes:[
+      {id:"dark",number:"1/2",title:"Die dunkle Seite eines Helden",duration:"51:21",src:"assets/media/podcast-odysseus-dunkle-seite.mp3",lens:"Held, Täter, Überlebender?",spoiler:"Bezieht sich auf Odysseus’ Handlungen und Entscheidungen über die gesamte Irrfahrt.",before:"Notiere vor dem Hören drei Eigenschaften, die für dich einen Helden ausmachen. Welche davon erfüllt Odysseus – welche nicht?",during:"Führe ein Hörprotokoll mit Zeitmarke, Podcastthese, genanntem Beleg und deiner vorläufigen Prüfung am Buch.",after:"Formuliere ein differenziertes Urteil, das mindestens eine entlastende und eine belastende Perspektive berücksichtigt."},
+      {id:"revenge",number:"2/2",title:"Heimkehr eines Rächers",duration:"53:05",src:"assets/media/podcast-odysseus-heimkehr-raecher.mp3",lens:"Recht, Rache oder Wiederherstellung?",spoiler:"Verrät Bogenprobe, Tötung der Freier, Bestrafungen und den abschliessenden Friedensschluss.",before:"Lege Kriterien fest, nach denen Vergeltung gerecht oder ungerecht sein könnte: Schuld, Verfahren, Verhältnismässigkeit und Alternativen.",during:"Trenne im Hörprotokoll Odysseus’ Motive, Athenes Plan, das Verhalten der Freier und die Stimme des Podcasts.",after:"Beurteile, ob die Heimkehr Recht wiederherstellt oder eine neue Gewaltspirale eröffnet. Beziehe Athenes Friedensschluss ein."}
+    ],
+    tasks:[
+      {id:"pod-dark-before",episode:"dark",phase:"VOR DEM HÖREN",title:"Heldenmassstab",prompt:"Bearbeite den Vorbereitungsauftrag der Folge. Formuliere einen eigenen Heldenbegriff, bevor der Podcast dein Urteil beeinflusst.",min:150},
+      {id:"pod-dark-log",episode:"dark",phase:"WÄHREND DES HÖRENS",title:"These – Beleg – Prüfung",prompt:"Dokumentiere mindestens drei Aussagen mit Zeitmarke. Nenne den Podcastbeleg und prüfe jede Aussage an einer konkreten Buchstelle.",min:320},
+      {id:"pod-dark-perspective",episode:"dark",phase:"NACH DEM HÖREN",title:"Wer erzählt den Helden?",prompt:"Welche Perspektiven erhalten im Podcast Gewicht, welche Figuren bleiben eher stumm? Erkläre, wie dieser Fokus das Odysseusbild verändert.",min:220},
+      {id:"pod-dark-verdict",episode:"dark",phase:"NACH DEM HÖREN",title:"Ambivalentes Urteil",prompt:"Ist «Held» für Odysseus eine Beschreibung, eine Wertung oder beides? Formuliere ein Urteil mit belastendem und entlastendem Textbeleg.",min:260},
+      {id:"pod-revenge-before",episode:"revenge",phase:"VOR DEM HÖREN",title:"Kriterien der Gerechtigkeit",prompt:"Definiere Schuld, Verfahren, Verhältnismässigkeit und mögliche Alternativen als Kriterien für dein späteres Urteil.",min:180},
+      {id:"pod-revenge-log",episode:"revenge",phase:"WÄHREND DES HÖRENS",title:"Vier Stimmen auseinanderhalten",prompt:"Halte mit Zeitmarken fest, was Odysseus will, was Athene lenkt, was die Freier getan haben und wie der Podcast diese Ebenen bewertet.",min:320},
+      {id:"pod-revenge-law",episode:"revenge",phase:"NACH DEM HÖREN",title:"Rache ohne Gericht",prompt:"Prüfe Bogenprobe und Freierkampf an deinen vier Kriterien. Berücksichtige antike Hausordnung, göttliche Legitimation und eine heutige Perspektive getrennt.",min:280},
+      {id:"pod-revenge-peace",episode:"revenge",phase:"NACH DEM HÖREN",title:"Warum braucht es Athene?",prompt:"Erkläre, weshalb der Sieg im Palast die Geschichte noch nicht beendet. Was zeigt der Friedensschluss über die Grenzen persönlicher Rache?",min:220},
+      {id:"pod-synthesis",episode:"both",phase:"ABSCHLUSS",title:"Anklage, Verteidigung, Urteil",prompt:"Verfasse eine dreiteilige Schlussakte: stärkste Anklage gegen Odysseus, stärkste Verteidigung und ein abgewogenes Urteil. Verwende beide Podcasts und mindestens vier Buchbelege.",min:500}
+    ]
+  };
+
+  return {threads,chapters,characters,locations,events,stations,achievements,finalPuzzle,mediaResource,heroJourney,writingProject,teiresiasInterrogations,srfTheory,podcastLab};
 })();

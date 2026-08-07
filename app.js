@@ -17,7 +17,7 @@
     completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
     rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
     streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-    writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],teiresiasChats:{},teiresiasCompleted:[],final:false
+    writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],podcastNotes:{},podcastCompleted:[],podcastPlayback:{},podcastListened:[],podcastAcknowledged:false,teiresiasChats:{},teiresiasCompleted:[],final:false
   };
   let activeStudentId = localStorage.getItem(ACTIVE_KEY) || "";
   let state = load();
@@ -212,7 +212,7 @@
     return students.sort((a,b)=>a.last.localeCompare(b.last,"de")).map(p=>{
       const s={...initial,...p.state}, percent=Math.round((s.completed?.length||0)/D.stations.length*100);
       return `<tr><td><strong>${esc(p.last)}, ${esc(p.first)}</strong></td><td>${s.completed?.length||0}/${D.stations.length}</td>
-        <td>${percent}%</td><td>${s.score||0}</td><td>${s.writing?.draftComplete?"abgeschlossen":`${countWords(s.writing?.fields?.draft||"")} Wörter`}</td>
+        <td>${percent}%</td><td>${s.score||0}</td><td>${s.podcastCompleted?.length||0}/${D.podcastLab.tasks.length}</td><td>${s.writing?.draftComplete?"abgeschlossen":`${countWords(s.writing?.fields?.draft||"")} Wörter`}</td>
         <td>${new Date(p.updatedAt||p.createdAt).toLocaleString("de-CH")}</td></tr>`;
     }).join("");
   }
@@ -223,8 +223,8 @@
     gate.hidden=true;dashboard.hidden=false;
     dashboard.innerHTML=`<p class="local-warning"><strong>Zentrale Klassenübersicht:</strong> ${students.length} Profile · von allen verbundenen Schülergeräten.</p>
       <div class="teacher-actions"><button class="primary" id="previewJourney" type="button">12-Stufen-Werkstatt ansehen</button><button class="hint-btn" id="exportClass" type="button">Klassendaten exportieren</button></div>
-      <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>Name</th><th>Stationen</th><th>Fortschritt</th><th>Eulen</th><th>Schreibprojekt</th><th>Zuletzt aktiv</th></tr></thead>
-      <tbody>${teacherRows(students)||'<tr><td colspan="6">Noch keine Schülerprofile eingetragen.</td></tr>'}</tbody></table></div>
+      <div class="teacher-table-wrap"><table class="teacher-table"><thead><tr><th>Name</th><th>Stationen</th><th>Fortschritt</th><th>Eulen</th><th>Podcast</th><th>Schreibprojekt</th><th>Zuletzt aktiv</th></tr></thead>
+      <tbody>${teacherRows(students)||'<tr><td colspan="7">Noch keine Schülerprofile eingetragen.</td></tr>'}</tbody></table></div>
       <section class="station-release-panel"><div><p class="eyebrow">MANUELLE FREIGABEN</p><h3>Einzelne Stationen öffnen</h3>
       <p>Markierte Stationen sind für alle Schüler sofort zugänglich – unabhängig von Datum und vorherigen Stationen.</p></div>
       <div class="release-grid">${stations.map((station,index)=>{
@@ -606,6 +606,28 @@
     document.querySelectorAll("[data-theory-note]").forEach(area=>area.addEventListener("input",()=>{state.theoryNotes[area.dataset.theoryNote]=area.value;const q=D.srfTheory.tasks.find(x=>x.id===area.dataset.theoryNote);document.querySelector(`[data-theory-count="${q.id}"]`).textContent=`${area.value.length}/${q.min} Zeichen`;save()}));
     document.querySelectorAll("[data-complete-theory]").forEach(button=>button.addEventListener("click",()=>{const q=D.srfTheory.tasks.find(x=>x.id===button.dataset.completeTheory),note=(state.theoryNotes[q.id]||"").trim(),feedback=document.querySelector(`[data-theory-feedback="${q.id}"]`);if(note.length<q.min){feedback.innerHTML=`<div class="feedback bad">Entwickle deine Argumentation auf mindestens ${q.min} Zeichen.</div>`;return}if(!state.theoryCompleted.includes(q.id)){state.theoryCompleted.push(q.id);record(6,`Theorie-Labor: ${q.title}`);save();showTheory()}}));
   }
+  function showPodcast(){
+    const p=D.podcastLab;state.podcastNotes=state.podcastNotes||{};state.podcastCompleted=state.podcastCompleted||[];state.podcastPlayback=state.podcastPlayback||{};state.podcastListened=state.podcastListened||[];
+    const firstEight=p.tasks.filter(q=>q.episode!=="both").every(q=>state.podcastCompleted.includes(q.id));
+    view.innerHTML=head(p.title,"PODCAST-LABOR · TRUE CRIME KRITISCH HÖREN")+`<section class="podcast-hero panel"><div><p class="eyebrow">HÖREN · PRÜFEN · URTEILEN</p><h2>Der Held auf der Anklagebank</h2><p>${esc(p.intro)}</p></div><div class="podcast-score"><strong>${state.podcastCompleted.length}</strong><span>/ ${p.tasks.length} Aufträge</span></div></section>
+      <section class="podcast-safety panel"><div class="safety-mark" aria-hidden="true">!</div><div><p class="eyebrow">INHALTS- UND SPOILERHINWEIS</p><h3>Vor dem Start bewusst entscheiden</h3><p>${esc(p.contentNote)}</p><label><input type="checkbox" id="podcastAcknowledge" ${state.podcastAcknowledged?"checked":""}> <span>Ich habe den Hinweis gelesen und möchte die Podcasts öffnen.</span></label></div></section>
+      <section class="listening-contract"><div class="section-head"><div><p class="eyebrow">DIDAKTISCHE SICHERUNG</p><h2>Vier Regeln für kritisches Hören</h2></div></div><div>${p.listeningRules.map((rule,i)=>`<article class="panel"><span>${i+1}</span><p>${esc(rule)}</p></article>`).join("")}</div></section>
+      <section class="podcast-episodes ${state.podcastAcknowledged?"":"podcast-locked"}">${p.episodes.map(ep=>`<article class="podcast-episode panel" style="--episode:${ep.id==="dark"?"var(--gods)":"var(--ithaka)"}"><div class="episode-heading"><span>FOLGE ${ep.number}</span><small>${ep.duration}</small><h2>${esc(ep.title)}</h2><strong>${esc(ep.lens)}</strong></div><div class="episode-spoiler"><strong>Spoilerbereich</strong><p>${esc(ep.spoiler)}</p></div><audio controls preload="metadata" data-podcast-audio="${ep.id}" src="${ep.src}" ${state.podcastAcknowledged?"":"inert"}>Dein Browser kann diese Audiodatei nicht wiedergeben.</audio><div class="listening-phases"><details><summary>Vor dem Hören</summary><p>${esc(ep.before)}</p></details><details><summary>Während des Hörens</summary><p>${esc(ep.during)}</p></details><details><summary>Nach dem Hören</summary><p>${esc(ep.after)}</p></details></div><p class="listened-state">${state.podcastListened.includes(ep.id)?"✓ Folge vollständig abgespielt":"Der Hörstand wird beim Pausieren gespeichert."}</p></article>`).join("")}</section>
+      <section class="podcast-work"><div class="section-head"><div><p class="eyebrow">OFFENE HÖR- UND TEXTAUFTRÄGE</p><h2>Vom Eindruck zum belegten Urteil</h2></div></div><div class="podcast-task-grid">${p.tasks.map((q,i)=>{const note=state.podcastNotes[q.id]||"",done=state.podcastCompleted.includes(q.id),locked=q.episode==="both"&&!firstEight;return `<article class="panel podcast-task ${done?"done":""} ${locked?"task-locked":""}"><div class="podcast-task-head"><span>${esc(q.phase)}</span><small>${q.episode==="dark"?"FOLGE 1":q.episode==="revenge"?"FOLGE 2":"BEIDE FOLGEN"}</small></div><h3>${esc(q.title)}</h3><p>${esc(q.prompt)}</p>${locked?'<div class="feedback">Die Schlussakte öffnet sich nach den acht Vorarbeiten.</div>':`<textarea data-podcast-note="${q.id}" rows="7" placeholder="Notiere Zeitmarken und konkrete Textbelege …">${esc(note)}</textarea><div class="podcast-task-actions"><span data-podcast-count="${q.id}">${note.length}/${q.min} Zeichen</span><button class="primary" data-complete-podcast="${q.id}" ${done?"disabled":""}>${done?"Gesichert ✓":"Sichern · +8 Eulen"}</button></div><div data-podcast-feedback="${q.id}"></div>`}</article>`}).join("")}</div></section>
+      <section class="podcast-source panel"><p><strong>Quellenregel:</strong> Die Audios sind journalistische Deutungen. Primärquellen bleiben Homers «Odyssee» in der Übersetzung von Voß und die gelesene Nacherzählung von Auguste Lechner. Aussagen über Motive und Schuld müssen deshalb rückgeprüft werden.</p></section>`;
+    bindPodcast();
+  }
+  function bindPodcast(){
+    document.querySelector("#podcastAcknowledge")?.addEventListener("change",event=>{state.podcastAcknowledged=event.target.checked;save();showPodcast()});
+    document.querySelectorAll("[data-podcast-audio]").forEach(audio=>{
+      const id=audio.dataset.podcastAudio;
+      audio.addEventListener("loadedmetadata",()=>{const saved=state.podcastPlayback[id]||0;if(saved>0&&saved<audio.duration-5)audio.currentTime=saved},{once:true});
+      audio.addEventListener("pause",()=>{if(audio.currentTime>0){state.podcastPlayback[id]=Math.floor(audio.currentTime);save()}});
+      audio.addEventListener("ended",()=>{if(!state.podcastListened.includes(id)){state.podcastListened.push(id);record(5,`Podcast vollständig gehört: ${D.podcastLab.episodes.find(x=>x.id===id).title}`);save();showPodcast()}});
+    });
+    document.querySelectorAll("[data-podcast-note]").forEach(area=>area.addEventListener("input",()=>{state.podcastNotes[area.dataset.podcastNote]=area.value;const q=D.podcastLab.tasks.find(x=>x.id===area.dataset.podcastNote);document.querySelector(`[data-podcast-count="${q.id}"]`).textContent=`${area.value.length}/${q.min} Zeichen`;save()}));
+    document.querySelectorAll("[data-complete-podcast]").forEach(button=>button.addEventListener("click",()=>{const q=D.podcastLab.tasks.find(x=>x.id===button.dataset.completePodcast),note=(state.podcastNotes[q.id]||"").trim(),feedback=document.querySelector(`[data-podcast-feedback="${q.id}"]`);if(note.length<q.min){feedback.innerHTML=`<div class="feedback bad">Vertiefe die Antwort auf mindestens ${q.min} Zeichen und arbeite mit Belegen.</div>`;return}if(!state.podcastCompleted.includes(q.id)){state.podcastCompleted.push(q.id);record(8,`Podcast-Labor: ${q.title}`);save();showPodcast()}}));
+  }
   function showMedia(){
     const m=D.mediaResource;
     view.innerHTML=head(m.title,"ERGÄNZENDE MULTIMEDIA-SPUR")+`<div class="media-layout">
@@ -729,15 +751,15 @@
   }
   function setView(name){
     document.querySelectorAll("nav [data-view]").forEach(b=>b.setAttribute("aria-current",b.dataset.view===name?"page":"false"));
-    if(["threads","theory","media","writing"].includes(name)&&currentReadingLimit()!==Infinity&&!teacherPinSession){
+    if(["threads","theory","media","podcast","writing"].includes(name)&&currentReadingLimit()!==Infinity&&!teacherPinSession){
       view.innerHTML=head("Noch nicht freigegeben","LESEPLAN 2026")+`<section class="panel reading-lock"><div class="reward">⌛</div>
         <h3>Dieser Lernbereich setzt die vollständige Lektüre voraus.</h3>
-        <p>Erzählstränge und Heldenreise, das Theorie-Labor, die Video-Aufgaben sowie das kreative Schreibprojekt enthalten Wissen aus dem ganzen Buch. Sie werden am <strong>21.09.2026</strong> freigeschaltet.</p>
+        <p>Erzählstränge und Heldenreise, das Theorie- und Podcast-Labor, die Video-Aufgaben sowie das kreative Schreibprojekt enthalten Wissen aus dem ganzen Buch. Sie werden am <strong>21.09.2026</strong> freigeschaltet.</p>
         <button class="primary" data-view="trail">Zu den aktuellen Textspuren</button></section>`;
       view.querySelector("[data-view=trail]").addEventListener("click",()=>setView("trail"));
       view.focus({preventScroll:true});return;
     }
-    ({trail:showTrail,threads:showThreads,route:showRoute,theory:showTheory,characters:showCharacters,clues:showClues,teiresias:showTeiresias,media:showMedia,economy:showEconomy,writing:showWriting}[name]||showTrail)();
+    ({trail:showTrail,threads:showThreads,route:showRoute,theory:showTheory,characters:showCharacters,clues:showClues,teiresias:showTeiresias,media:showMedia,podcast:showPodcast,economy:showEconomy,writing:showWriting}[name]||showTrail)();
     view.focus({preventScroll:true});
   }
   document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
@@ -762,7 +784,7 @@
     if(confirm("Den gesamten lokalen Fortschritt wirklich löschen?")){
       state={...initial,completed:[],taskResults:{},hints:{},attempts:{},clues:[],achievements:[],rewardedAchievements:[],
         transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
-        writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
+        writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],podcastNotes:{},podcastCompleted:[],podcastPlayback:{},podcastListened:[],podcastAcknowledged:false,teiresiasChats:{},teiresiasCompleted:[]};save();showTrail();
     }
   });
   updateHeader();showTrail();loadTeacherUnlocks().then(showTrail);if(!activeStudentId)window.setTimeout(openLogin,250);

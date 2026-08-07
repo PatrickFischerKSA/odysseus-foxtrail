@@ -21,6 +21,10 @@ if(d.srfTheory?.wolfPlaces?.length!==12)errors.push("SRF-Theorieblock enthält n
 if(d.srfTheory?.videos?.length!==6)errors.push("SRF-Theorieblock enthält nicht alle 6 Reisefolgen");
 if(d.srfTheory?.alternatives?.length!==4)errors.push("SRF-Theorieblock enthält nicht alle 4 Alternativthesen");
 if(d.srfTheory?.tasks?.length!==8)errors.push("SRF-Theorieblock enthält nicht 8 offene Aufgaben");
+if(d.podcastLab?.episodes?.length!==2)errors.push("Podcast-Labor enthält nicht beide Folgen");
+if(d.podcastLab?.tasks?.length!==9)errors.push("Podcast-Labor enthält nicht 9 offene Aufgaben");
+if((d.podcastLab?.tasks||[]).some(q=>!q.prompt||!q.min||q.min<100))errors.push("Podcast-Aufgabe unvollständig");
+if((d.podcastLab?.episodes||[]).some(e=>!e.before||!e.during||!e.after||!e.spoiler))errors.push("Didaktische Podcast-Sicherung unvollständig");
 if((d.srfTheory?.tasks||[]).some(q=>!q.prompt||!q.min||q.min<100))errors.push("SRF-Theorieaufgabe unvollständig");
 const journeyPhaseIds=new Set((d.heroJourney?.phases||[]).map(x=>x.id));
 for(const phase of d.heroJourney?.phases||[])if(!phase.concept||!phase.events||!phase.meaning||!phase.workshopPrompt||!phase.fit)errors.push(`Heldenreise-Stufe unvollständig: ${phase.id}`);
