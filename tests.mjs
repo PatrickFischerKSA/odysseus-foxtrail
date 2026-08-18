@@ -38,6 +38,8 @@ for(const oracle of d.teiresiasInterrogations||[]){
 if(tasks.length!==84)errors.push(`erwartet 84 Aufgaben, gefunden ${tasks.length}`);
 if(d.characters.length<20)errors.push("weniger als 20 Figuren");
 if(!htmlSource.includes('data-view="characters">Personennetz'))errors.push("Personennetz fehlt in der Hauptnavigation");
+if(!htmlSource.includes("https://dl.dropboxusercontent.com/")||!htmlSource.includes("&amp;dl=1"))errors.push("Hörbuch ist nicht als direkter Dropbox-Download eingebunden");
+if(htmlSource.includes("Dropbox-Ressource öffnen")||htmlSource.includes("&amp;dl=0"))errors.push("Veralteter Dropbox-Vorschaulink vorhanden");
 if(!appSource.includes('VON BEGINN AN FREI · SPOILERARME ORIENTIERUNG'))errors.push("Personennetz ist nicht als freie Lesehilfe gekennzeichnet");
 for(const tree of ["Haus Ithaka","Götterfamilien","Haus der Phaiaken","Ganzes Netz"])if(!appSource.includes(tree))errors.push(`Stammbaum fehlt: ${tree}`);
 if(tasks.some(x=>!["text","order"].includes(x.q.type)))errors.push("nicht-offener Aufgabentyp vorhanden");
