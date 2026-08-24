@@ -73,6 +73,7 @@ for(const {s,q} of tasks){
 }
 if(appSource.includes('id="hintButton"')||appSource.includes("Hinweis ${opened+1} öffnen"))errors.push("Kaufbarer Stationshinweis noch vorhanden");
 if(!appSource.includes("kostenloser Hinweis:")||!appSource.includes("Musterlösung:"))errors.push("Dreistufige Rückmeldung fehlt");
+if(!appSource.includes('<textarea class="text-answer" id="textAnswer"')||appSource.includes('<input class="text-answer" id="textAnswer"'))errors.push("Stationsantworten sind nicht mehrzeilig beschreibbar");
 if(!appSource.includes('const KEY = "athenes-archiv-v1"'))errors.push("Bestehender Lernstand-Schlüssel wurde verändert");
 if(!appSource.includes("function migrateState")||!appSource.includes("function mergeLearningStates"))errors.push("Verlustfreie Lernstand-Migration fehlt");
 if(!appSource.includes("Bestandsschutz: Versionswechsel ergänzen Daten nur"))errors.push("Bestandsschutz ist nicht als Projektregel verankert");

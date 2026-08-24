@@ -764,7 +764,8 @@
   function renderTask(q){
     order=q.type==="order"?[...q.options]:[];
     const attempts=(state.attempts||{})[q.id]||0;
-    const answerHTML=q.type==="text"?`<input class="text-answer" id="textAnswer" autocomplete="off" aria-label="Antwort">`
+    const answerRows=q.expectedParts>=3?Math.min(7,q.expectedParts+1):q.expectedParts===2?4:3;
+    const answerHTML=q.type==="text"?`<textarea class="text-answer" id="textAnswer" rows="${answerRows}" autocomplete="off" aria-label="Antwort" placeholder="Schreibe deine Antwort hier. Mit Enter beginnst du eine neue Zeile."></textarea>`
       :q.type==="order"?`<div class="answers sortable" id="orderList">${order.map((x,i)=>`<div class="answer"><span>${i+1}. ${esc(x)}</span><span><button data-up="${i}" aria-label="Nach oben">↑</button> <button data-down="${i}" aria-label="Nach unten">↓</button></span></div>`).join("")}</div>`
       :"";
     return `<div class="task-box"><span class="task-progress">3 · TEXTSPUR LÖSEN · ${esc(q.creativeMode).toUpperCase()} · AUFGABE ${taskIndex+1}/3 · SCHWIERIGKEIT ${"●".repeat(q.difficulty)}${"○".repeat(3-q.difficulty)}</span>
