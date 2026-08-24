@@ -6,6 +6,7 @@
   const ACTIVE_KEY = "athenes-aktives-profil-v1";
   const TEACHER_PIN_KEY = "athenes-lehrer-pin-v1";
   const FILM_PAUSED_KEY = "athenes-hintergrundfilm-pausiert-v1";
+  const STATE_SCHEMA_VERSION = 2;
   const READING_PLAN = [
     {date:"2026-08-24",pages:50,label:"bis Seite 50"},
     {date:"2026-08-31",pages:100,label:"bis Seite 100"},
@@ -14,6 +15,7 @@
     {date:"2026-09-21",pages:Infinity,label:"ganzes Buch"}
   ];
   const initial = {
+    schemaVersion:STATE_SCHEMA_VERSION,
     completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],
     rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben",kind:"reward"}],
     streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
@@ -37,12 +39,46 @@
     try{return JSON.parse(localStorage.getItem(USERS_KEY)||"{}");}catch{return {}}
   }
   function setUsers(users){localStorage.setItem(USERS_KEY,JSON.stringify(users))}
+  // Bestandsschutz: Versionswechsel ergänzen Daten nur. Lernstände werden nie durch neue Defaults ersetzt.
+  function migrateState(raw={}){
+    const old=raw&&typeof raw==="object"?raw:{};
+    const array=(key,fallback=[])=>Array.isArray(old[key])?[...old[key]]:[...fallback];
+    const map=key=>old[key]&&typeof old[key]==="object"&&!Array.isArray(old[key])?{...old[key]}:{};
+    return {...initial,...old,schemaVersion:STATE_SCHEMA_VERSION,
+      completed:array("completed"),taskResults:map("taskResults"),hints:map("hints"),attempts:map("attempts"),
+      clues:array("clues"),achievements:array("achievements"),rewardedAchievements:array("rewardedAchievements"),
+      transactions:array("transactions",initial.transactions),mediaNotes:map("mediaNotes"),journeyResults:map("journeyResults"),
+      journeyAttempts:map("journeyAttempts"),journeyHints:map("journeyHints"),journeyStageNotes:map("journeyStageNotes"),
+      journeyStageCompleted:array("journeyStageCompleted"),theoryNotes:map("theoryNotes"),theoryCompleted:array("theoryCompleted"),
+      podcastNotes:map("podcastNotes"),podcastCompleted:array("podcastCompleted"),podcastPlayback:map("podcastPlayback"),
+      podcastListened:array("podcastListened"),teiresiasChats:map("teiresiasChats"),teiresiasCompleted:array("teiresiasCompleted"),
+      writing:{...initial.writing,...(old.writing||{}),fields:{...initial.writing.fields,...(old.writing?.fields||{})},
+        completed:Array.isArray(old.writing?.completed)?[...old.writing.completed]:[],revision:Array.isArray(old.writing?.revision)?[...old.writing.revision]:[]}
+    };
+  }
+  function mergeLearningStates(localState,remoteState){
+    const local=migrateState(localState),remote=migrateState(remoteState),merged=migrateState({...local,...remote});
+    const union=key=>[...new Set([...(local[key]||[]),...(remote[key]||[])])];
+    ["completed","clues","achievements","rewardedAchievements","journeyStageCompleted","theoryCompleted","podcastCompleted","podcastListened","teiresiasCompleted"].forEach(key=>merged[key]=union(key));
+    merged.taskResults={...(local.taskResults||{})};Object.entries(remote.taskResults||{}).forEach(([key,value])=>merged.taskResults[key]=Boolean(merged.taskResults[key]||value));
+    ["hints","attempts","journeyAttempts","journeyHints"].forEach(key=>{merged[key]={...(local[key]||{})};Object.entries(remote[key]||{}).forEach(([id,value])=>merged[key][id]=Math.max(Number(merged[key][id])||0,Number(value)||0));});
+    ["mediaNotes","journeyStageNotes","theoryNotes","podcastNotes"].forEach(key=>{merged[key]={...(local[key]||{})};Object.entries(remote[key]||{}).forEach(([id,value])=>{if(String(value||"").length>String(merged[key][id]||"").length)merged[key][id]=value;});});
+    merged.journeyResults={...(local.journeyResults||{}),...(remote.journeyResults||{})};merged.podcastPlayback={...(local.podcastPlayback||{}),...(remote.podcastPlayback||{})};
+    merged.teiresiasChats={...(local.teiresiasChats||{})};Object.entries(remote.teiresiasChats||{}).forEach(([id,value])=>{if((value?.length||0)>(merged.teiresiasChats[id]?.length||0))merged.teiresiasChats[id]=value;});
+    merged.score=Math.max(Number(local.score)||0,Number(remote.score)||0);
+    merged.bestStreak=Math.max(Number(local.bestStreak)||0,Number(remote.bestStreak)||0);
+    merged.transactions=[...(remote.transactions||[]),...(local.transactions||[])].filter((item,index,all)=>index===all.findIndex(x=>x.time===item.time&&x.label===item.label)).sort((a,b)=>(b.time||0)-(a.time||0)).slice(0,60);
+    const localWriting=local.writing||initial.writing,remoteWriting=remote.writing||initial.writing;
+    const writingFields={...(localWriting.fields||{})};Object.entries(remoteWriting.fields||{}).forEach(([id,value])=>{if(String(value||"").length>String(writingFields[id]||"").length)writingFields[id]=value;});
+    merged.writing={...localWriting,...remoteWriting,fields:writingFields,completed:[...new Set([...(localWriting.completed||[]),...(remoteWriting.completed||[])])],revision:[...new Set([...(localWriting.revision||[]),...(remoteWriting.revision||[])])],draftComplete:Boolean(localWriting.draftComplete||remoteWriting.draftComplete)};
+    return merged;
+  }
   function load(){
     try {
       const profile=getUsers()[activeStudentId];
-      return {...initial,...(profile?.state||JSON.parse(localStorage.getItem(KEY)||"{}"))};
+      return migrateState(profile?.state||JSON.parse(localStorage.getItem(KEY)||"{}"));
     }
-    catch { return {...initial}; }
+    catch { return migrateState(); }
   }
   function record(amount,label,kind=amount>=0?"reward":"cost"){
     state.score=state.score+amount;
@@ -195,7 +231,7 @@
     const id=studentId(first,last), users=getUsers();
     if(!users[id]){
       const legacy=Object.keys(users).length===0?JSON.parse(localStorage.getItem(KEY)||"null"):null;
-      users[id]={first,last,createdAt:Date.now(),updatedAt:Date.now(),state:legacy?{...initial,...legacy}:{...initial}};
+      users[id]={first,last,createdAt:Date.now(),updatedAt:Date.now(),state:migrateState(legacy||{})};
     }
     const feedback=document.querySelector("#studentLoginFeedback");
     try{
@@ -209,7 +245,7 @@
         const response=await fetch(`${API}/student`,{headers:{"X-Student-Token":users[id].cloudToken}});
         if(response.ok){
           const result=await response.json();
-          if((result.updatedAt||0)>(users[id].updatedAt||0))users[id].state={...initial,...result.state};
+          if(result.state)users[id].state=mergeLearningStates(users[id].state,result.state);
         }
       }
       setUsers(users);activeStudentId=id;localStorage.setItem(ACTIVE_KEY,id);

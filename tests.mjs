@@ -8,6 +8,14 @@ const d=sandbox.window.ODYSSEUS_DATA;
 const tasks=d.stations.flatMap(s=>s.tasks.map(q=>({s,q})));
 const ids=new Set();
 const errors=[];
+const migrationCode=appSource.slice(appSource.indexOf("function migrateState"),appSource.indexOf("function load()"));
+const migrationSandbox={};
+vm.runInNewContext(`const STATE_SCHEMA_VERSION=2;const initial={schemaVersion:2,completed:[],taskResults:{},hints:{},attempts:{},score:12,clues:[],achievements:[],rewardedAchievements:[],transactions:[{amount:12,label:"Startguthaben"}],mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],podcastNotes:{},podcastCompleted:[],podcastPlayback:{},podcastListened:[],teiresiasChats:{},teiresiasCompleted:[],writing:{fields:{},completed:[],revision:[],draftComplete:false}};${migrationCode};globalThis.stateTools={migrateState,mergeLearningStates};`,migrationSandbox);
+const oldState={completed:["troja"],taskResults:{t1:true},attempts:{t2:2},score:37,theoryNotes:{x:"alter ausführlicher Text"},writing:{fields:{draft:"bestehender Entwurf"},completed:["plan"],revision:[1],draftComplete:false}};
+const migrated=migrationSandbox.stateTools.migrateState(oldState);
+if(!migrated.completed.includes("troja")||!migrated.taskResults.t1||migrated.score!==37||migrated.writing.fields.draft!=="bestehender Entwurf")errors.push("Migration zerstört bestehenden Lernstand");
+const mergedProgress=migrationSandbox.stateTools.mergeLearningStates(oldState,{completed:["polyphem"],taskResults:{t3:true},attempts:{t2:1},score:20,theoryNotes:{x:"kurz"},writing:{fields:{draft:"neu"},completed:[],revision:[],draftComplete:true}});
+if(!mergedProgress.completed.includes("troja")||!mergedProgress.completed.includes("polyphem")||!mergedProgress.taskResults.t1||!mergedProgress.taskResults.t3||mergedProgress.attempts.t2!==2||mergedProgress.score!==37||mergedProgress.theoryNotes.x!=="alter ausführlicher Text"||mergedProgress.writing.fields.draft!=="bestehender Entwurf"||!mergedProgress.writing.draftComplete)errors.push("Synchronisation überschreibt bestehenden Lernstand");
 const pagesFrom=text=>{
   const pages=new Set();
   for(const match of String(text).matchAll(/(\d+)(?:\s*[–-]\s*(\d+))?/g)){
@@ -53,6 +61,8 @@ for(const {s,q} of tasks){
   if(!q.hints||q.hints.length<2)errors.push(`Hinweise fehlen ${q.id}`);
   if(q.answer===undefined||!q.feedback||!q.objective)errors.push(`Inhalt unvollständig ${q.id}`);
   if(!q.instruction)errors.push(`Antwortformat fehlt ${q.id}`);
+  if(!q.instruction.includes(q.objective))errors.push(`Individueller Prüffokus fehlt ${q.id}`);
+  if(!Number.isInteger(q.expectedParts)||q.expectedParts<1)errors.push(`Erwartungsumfang fehlt ${q.id}`);
   const stationPages=pagesFrom(s.pageRef);
   for(const hint of q.hints){
     const marker=hint.match(/PDF-Seite(?:n)?\s+(.+?)(?:\.|$)/);
@@ -63,6 +73,9 @@ for(const {s,q} of tasks){
 }
 if(appSource.includes('id="hintButton"')||appSource.includes("Hinweis ${opened+1} öffnen"))errors.push("Kaufbarer Stationshinweis noch vorhanden");
 if(!appSource.includes("kostenloser Hinweis:")||!appSource.includes("Musterlösung:"))errors.push("Dreistufige Rückmeldung fehlt");
+if(!appSource.includes('const KEY = "athenes-archiv-v1"'))errors.push("Bestehender Lernstand-Schlüssel wurde verändert");
+if(!appSource.includes("function migrateState")||!appSource.includes("function mergeLearningStates"))errors.push("Verlustfreie Lernstand-Migration fehlt");
+if(!appSource.includes("Bestandsschutz: Versionswechsel ergänzen Daten nur"))errors.push("Bestandsschutz ist nicht als Projektregel verankert");
 const limits=[50,100,150,200,Infinity];
 const expected=[6,13,16,22,28];
 const counts=limits.map(limit=>d.stations.filter(s=>Math.max(...pagesFrom(s.pageRef))<=limit).length);

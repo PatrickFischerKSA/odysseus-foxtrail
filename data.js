@@ -531,12 +531,21 @@ window.ODYSSEUS_DATA = (() => {
   stations.forEach((station,stationIndex)=>{
     Object.assign(station,stationContexts[station.id]);
     station.tasks.forEach((q,taskNumber)=>{
+      const originalType=q.type;
       if(q.type!=="order"){q.type="text";delete q.options;}
-      if(q.type==="order")q.instruction="Bringe alle Ereignisse mit den Pfeilen in die richtige zeitliche Reihenfolge.";
-      else if(q.answer&&typeof q.answer==="object"&&!Array.isArray(q.answer))q.instruction="Schreibe jede Zuordnung in einer eigenen Zeile nach dem Muster «Figur – Bezug».";
-      else if(Array.isArray(q.answer))q.instruction="Nenne alle verlangten Punkte. Du kannst sie mit Kommas trennen oder in ganzen Sätzen formulieren.";
-      else if(String(q.answer).trim().split(/\s+/).length<=3)q.instruction="Ein passender Begriff oder Name genügt. Rechtschreibvarianten und Synonyme werden akzeptiert.";
-      else q.instruction="Antworte in 1–3 klaren Sätzen. Nenne die verlangten Ursachen, Handlungen oder Folgen ausdrücklich.";
+      const answerWords=String(Array.isArray(q.answer)?q.answer.join(" "):q.answer).trim().split(/\s+/).length;
+      if(originalType==="order")q.instruction=`Erwartet: ${q.answer.length} Ereignisse. Verschiebe alle Einträge mit den Pfeilen; oben steht das früheste Ereignis.`;
+      else if(originalType==="match")q.instruction=`Erwartet: ${Object.keys(q.answer).length} vollständige Zuordnungen. Schreibe jede in einer eigenen Zeile als «Figur/Begriff – passender Bezug».`;
+      else if(originalType==="multi")q.instruction=`Erwartet: genau ${q.answer.length} verschiedene Punkte. Nenne alle ${q.answer.length} konkret und trenne sie mit Kommas oder «und».`;
+      else if(originalType==="choice")q.instruction="Erwartet: eine eindeutige Entscheidung oder Ursache. Nenne sie ausdrücklich; ein kurzer Textbezug darf folgen.";
+      else if(Array.isArray(q.answer))q.instruction=`Erwartet: ${q.answer.length} getrennte Inhaltsaspekte. Behandle jeden Aspekt in einem eigenen Satz oder Satzteil.`;
+      else if(answerWords<=3)q.instruction="Erwartet: ein Begriff oder Name. Ein Wort genügt; sinnrichtige Synonyme und Schreibvarianten zählen.";
+      else if(/vergleich|unterschied|im vergleich/i.test(q.prompt))q.instruction="Erwartet: beide Seiten des Vergleichs und der entscheidende Unterschied. Antworte in 2–3 Sätzen.";
+      else if(/ursache|folge|wodurch|warum/i.test(q.prompt))q.instruction="Erwartet: zuerst die konkrete Ursache oder Handlung, danach ihre Wirkung oder Folge. Antworte als klare Ursache-Folge-Kette.";
+      else if(/bedeutung|deute|zeigt|erkläre/i.test(q.prompt))q.instruction="Erwartet: ein konkretes Textdetail und eine Erklärung seiner Bedeutung. Eine blosse Nennung genügt nicht.";
+      else q.instruction="Erwartet: eine konkrete Handlung oder Beobachtung aus dem Text und ihre Wirkung. Antworte in 1–3 vollständigen Sätzen.";
+      q.instruction+=` Prüffokus: ${q.objective}.`;
+      q.expectedParts=originalType==="order"?q.answer.length:originalType==="match"?Object.keys(q.answer).length:Array.isArray(q.answer)?q.answer.length:1;
       q.creativeMode=q.type==="order"?"Rekonstruktion":creativeModes[(stationIndex+taskNumber)%creativeModes.length];
     });
   });
