@@ -532,6 +532,11 @@ window.ODYSSEUS_DATA = (() => {
     Object.assign(station,stationContexts[station.id]);
     station.tasks.forEach((q,taskNumber)=>{
       if(q.type!=="order"){q.type="text";delete q.options;}
+      if(q.type==="order")q.instruction="Bringe alle Ereignisse mit den Pfeilen in die richtige zeitliche Reihenfolge.";
+      else if(q.answer&&typeof q.answer==="object"&&!Array.isArray(q.answer))q.instruction="Schreibe jede Zuordnung in einer eigenen Zeile nach dem Muster «Figur – Bezug».";
+      else if(Array.isArray(q.answer))q.instruction="Nenne alle verlangten Punkte. Du kannst sie mit Kommas trennen oder in ganzen Sätzen formulieren.";
+      else if(String(q.answer).trim().split(/\s+/).length<=3)q.instruction="Ein passender Begriff oder Name genügt. Rechtschreibvarianten und Synonyme werden akzeptiert.";
+      else q.instruction="Antworte in 1–3 klaren Sätzen. Nenne die verlangten Ursachen, Handlungen oder Folgen ausdrücklich.";
       q.creativeMode=q.type==="order"?"Rekonstruktion":creativeModes[(stationIndex+taskNumber)%creativeModes.length];
     });
   });

@@ -130,14 +130,28 @@
     }catch{}
   }
   function openAnswerCorrect(q,value){
-    const entered=words(value), compact=normal(value);
+    const synonymSets=[
+      ["gott","gotter","gottheit","olympier"],["zorn","wut","arger","erzurn"],["schuld","untat","frevel","verbrechen"],
+      ["warn","rat","raten","empfehl"],["heimkehr","ruckkehr","heimweg","ithaka","heimat"],["helfen","hilfe","rett","unterstutz","beistand"],
+      ["tod","tot","sterb","toten","umbring","erschlag"],["verlust","verlier","untergang","vernicht"],["schatz","reichtum","beute","gold"],
+      ["feier","fest","trink","zechen"],["bleib","wart","verweil","nicht abfahr"],["verstark","unterstutz","weitere kampfer","mehr soldat"],
+      ["list","tausch","trick","plan"],["blind","blend","auge"],["versteck","verberg","widder","schaf"],
+      ["stolz","hochmut","prah","uberheb"],["name","nennen","enthull"],["rache","vergelt","rachen"],["treu","loyal","ergeben"],
+      ["freier","brautwerber"],["konig","herrscher"],["sohn","kind"],["vater","eltern"],["ehefrau","frau","gattin"],
+      ["angst","furcht","sorge"],["essen","nahrung","hunger"],["verbot","nicht durfen","schonen","unberuhrt"],["schiff","flotte","boot"],
+      ["gefahr","bedroh","hindern","gegner"],["wissen","nachricht","auskunft","rat"],["erkenn","identitat","beweis"],["frieden","ordnung","versohn"]
+    ];
+    const stop=new Set(["aber","alle","alles","auch","auf","aus","bei","bis","dann","das","dass","dem","den","der","des","die","durch","ein","eine","einer","eines","er","es","fur","gegen","hat","haben","ihr","ihre","im","in","ist","mit","nach","nicht","oder","sich","sie","sind","so","und","vom","von","vor","war","weil","wenn","werden","wird","wodurch","warum","welche","welcher","welches","wie","zu","zum","zur"]);
+    const concept=word=>{const stem=normal(word);const set=synonymSets.find(items=>items.some(item=>stem.includes(normal(item))||normal(item).includes(stem)));return set?normal(set[0]):stem.slice(0,Math.max(4,stem.length-2));};
+    const concepts=text=>new Set(words(text).filter(w=>w.length>=3&&!stop.has(w)).map(concept));
+    const entered=words(value), enteredConcepts=concepts(value), compact=normal(value);
     if(!entered.length)return false;
     if([q.answer,...(q.alternatives||[])].filter(x=>typeof x==="string").some(x=>normal(x)===compact))return true;
     const containsIdea=idea=>{
-      const keys=words(idea);
+      const keys=[...concepts(idea)];
       if(!keys.length)return false;
-      const hits=keys.filter(k=>entered.some(e=>e===k||e.startsWith(k.slice(0,Math.max(4,k.length-2)))||k.startsWith(e.slice(0,Math.max(4,e.length-2))))).length;
-      return hits>=Math.max(1,Math.ceil(keys.length*.45));
+      const hits=keys.filter(k=>enteredConcepts.has(k)).length;
+      return hits>=Math.max(1,Math.floor(keys.length*.28));
     };
     if(Array.isArray(q.answer))return q.answer.every(containsIdea);
     if(q.answer&&typeof q.answer==="object")return Object.entries(q.answer).every(([a,b])=>containsIdea(a)&&containsIdea(b));
@@ -499,14 +513,14 @@
     bindFinal();
   }
   function showEconomy(){
-    const costs=[["Erster Denkhinweis","−1"],["Hinweis zu Figur, Ort oder Strang","−2"],["Kapitel- und Seitenorientierung","−3"]];
+    const costs=[["1. Fehlversuch","nur richtig/falsch"],["2. Fehlversuch","Gratis-Hinweis"],["3. Fehlversuch","Musterlösung"]];
     const rewards=[["Richtige Textspur","＋8"],["Beim ersten Versuch","＋4 Bonus"],["Ohne Hinweis","＋2 Bonus"],["Dreierserie beim ersten Versuch","＋5"],["Station abgeschlossen","＋12"],["Neues Abzeichen","＋10"],["Schlussrätsel","＋30"]];
     view.innerHTML=head("Athenes Eulen-Konto","SPIELPUNKTE · KEIN ECHTES GELD")+`<div class="economy-grid">
       <section class="panel balance-panel"><p class="eyebrow">AKTUELLER STAND</p><strong class="big-balance">${state.score}</strong><span>Athenes Eulen</span>
         <p>Die Eulen zeigen Ausdauer, genaue Textarbeit und klugen Umgang mit Hinweisen. Sie haben keinerlei Geldwert.</p>
         <div class="streak">Aktuelle Erstversuch-Serie: <strong>${state.streak||0}</strong> · Beste Serie: <strong>${state.bestStreak||0}</strong></div></section>
-      <section class="panel"><h3>Hinweiskosten</h3><div class="tariff-list">${costs.map(([a,b])=>`<div><span>${a}</span><strong class="cost">${b}</strong></div>`).join("")}</div>
-        <p class="muted">Ein bereits geöffneter Hinweis kostet beim erneuten Ansehen nichts. Auch bei null Eulen bleiben alle Aufgaben lösbar.</p></section>
+      <section class="panel"><h3>Hilfen ohne Eulenabzug</h3><div class="tariff-list">${costs.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("")}</div>
+        <p class="muted">Bei den 84 Stationsfragen werden für Hinweise und Musterlösungen keine Eulen mehr abgezogen.</p></section>
       <section class="panel"><h3>Belohnungen</h3><div class="tariff-list">${rewards.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("")}</div></section>
       <section class="panel ledger"><h3>Letzte Buchungen</h3>${(state.transactions||[]).length?`<div class="ledger-list">${state.transactions.map(t=>`<div>
         <span>${esc(t.label)}</span><strong class="${t.amount<0?"cost":""}">${t.amount>0?"+":""}${t.amount}</strong></div>`).join("")}</div>`:"<p>Noch keine Buchungen.</p>"}</section>
@@ -713,21 +727,19 @@
   }
   function renderTask(q){
     order=q.type==="order"?[...q.options]:[];
-    const opened=state.hints[q.id]||0;
-    const nextCost=opened>=q.hints.length?0:([1,2,3][opened]||3);
-    const hintLabel=opened>=q.hints.length?"Letzten Hinweis ansehen":`Hinweis ${opened+1} öffnen · −${nextCost} Eulen`;
+    const attempts=(state.attempts||{})[q.id]||0;
     const answerHTML=q.type==="text"?`<input class="text-answer" id="textAnswer" autocomplete="off" aria-label="Antwort">`
       :q.type==="order"?`<div class="answers sortable" id="orderList">${order.map((x,i)=>`<div class="answer"><span>${i+1}. ${esc(x)}</span><span><button data-up="${i}" aria-label="Nach oben">↑</button> <button data-down="${i}" aria-label="Nach unten">↓</button></span></div>`).join("")}</div>`
       :"";
     return `<div class="task-box"><span class="task-progress">3 · TEXTSPUR LÖSEN · ${esc(q.creativeMode).toUpperCase()} · AUFGABE ${taskIndex+1}/3 · SCHWIERIGKEIT ${"●".repeat(q.difficulty)}${"○".repeat(3-q.difficulty)}</span>
-      <h3>${esc(q.prompt)}</h3>${answerHTML}<div id="taskFeedback"></div><div class="actions">
-      <button class="primary" id="checkAnswer">Spur prüfen</button><button class="hint-btn" id="hintButton">${hintLabel}</button></div></div>`;
+      <h3>${esc(q.prompt)}</h3><p class="answer-instruction">${esc(q.instruction||"Antworte mit Bezug zum gelesenen Text.")}</p>
+      <div class="attempt-path" aria-label="Ablauf der Lösungsversuche"><span class="${attempts===0?"active":""}">1 · Prüfung</span><span class="${attempts===1?"active":""}">2 · Gratis-Hinweis</span><span class="${attempts>=2?"active":""}">3 · Musterlösung</span></div>
+      ${answerHTML}<div id="taskFeedback"></div><div class="actions"><button class="primary" id="checkAnswer">Antwort prüfen</button></div></div>`;
   }
   function bindTask(){
     const q=currentStation?.tasks[taskIndex]; if(!q)return;
     bindOrder(q);
     document.querySelector("#checkAnswer")?.addEventListener("click",()=>check(q));
-    document.querySelector("#hintButton")?.addEventListener("click",()=>hint(q));
   }
   function bindOrder(q){
     document.querySelectorAll("[data-up],[data-down]").forEach(b=>b.addEventListener("click",()=>{
@@ -744,8 +756,13 @@
     if(!ok){
       state.attempts=state.attempts||{};state.attempts[q.id]=(state.attempts[q.id]||0)+1;
       state.streak=0;save();
-      const used=state.hints[q.id]||0;
-      f.innerHTML=`<div class="feedback bad"><strong>Noch nicht.</strong> ${used?q.hints[Math.min(used-1,q.hints.length-1)]:"Prüfe das Indiz und versuche es nochmals."}</div>`;return;
+      const attempts=state.attempts[q.id];
+      if(attempts===1){f.innerHTML='<div class="feedback bad"><strong>Falsch.</strong> Prüfe deine Antwort noch einmal am Text. Beim nächsten Fehlversuch erhältst du kostenlos einen Hinweis.</div>';return;}
+      if(attempts===2){state.hints[q.id]=Math.max(state.hints[q.id]||0,1);save();f.innerHTML=`<div class="feedback"><strong>Falsch – kostenloser Hinweis:</strong> ${esc(q.hints[0])}</div>`;return;}
+      state.hints[q.id]=Math.max(state.hints[q.id]||0,2);save();
+      const solution=Array.isArray(q.answer)?q.answer.join(" · "):q.answer&&typeof q.answer==="object"?Object.entries(q.answer).map(([a,b])=>`${a} – ${b}`).join(" · "):String(q.answer);
+      f.innerHTML=`<div class="feedback solution"><strong>Musterlösung:</strong> ${esc(solution)}<br><span class="muted">Vergleiche sie mit deiner Antwort. Dafür werden keine Eulen abgezogen.</span></div>`;
+      setContinueButton(taskIndex===2?"Musterlösung verstanden · Station abschliessen":"Musterlösung verstanden · nächste Aufgabe");return;
     }
     if(!state.taskResults[q.id]){
       const firstTry=!((state.attempts||{})[q.id]>0), noHint=!(state.hints[q.id]>0);
@@ -757,18 +774,11 @@
       state.taskResults[q.id]=true;record(reward,`${q.creativeMode}: ${parts.join(", ")}`);save();
     }
     f.innerHTML=`<div class="feedback good"><strong>Spur bestätigt.</strong> ${esc(q.feedback)}<br><span class="muted">Lernziel: ${esc(q.objective)}</span></div>`;
-    document.querySelector("#checkAnswer").textContent=taskIndex===2?"Station abschliessen":"Nächste Aufgabe";
-    document.querySelector("#checkAnswer").onclick=()=>nextTask();
+    setContinueButton(taskIndex===2?"Station abschliessen":"Nächste Aufgabe");
   }
-  function hint(q){
-    const opened=state.hints[q.id]||0;
-    if(opened>=q.hints.length){
-      document.querySelector("#taskFeedback").innerHTML=`<div class="feedback"><strong>Hinweis ${q.hints.length}/${q.hints.length}:</strong> ${esc(q.hints[q.hints.length-1])}<br><span class="muted">Bereits bezahlt – keine weiteren Kosten.</span></div>`;return;
-    }
-    const cost=[1,2,3][opened]||3, used=Math.min(opened,q.hints.length-1);
-    state.hints[q.id]=opened+1;record(-cost,`Hinweis ${opened+1} zu ${q.creativeMode}`,"cost");save();
-    document.querySelector("#taskFeedback").innerHTML=`<div class="feedback"><strong>Hinweis ${used+1}/${q.hints.length} · −${cost} Eulen:</strong> ${esc(q.hints[used])}</div>`;
-    document.querySelector("#hintButton").textContent=opened+1>=q.hints.length?"Letzten Hinweis ansehen":`Hinweis ${opened+2} öffnen · −${[1,2,3][opened+1]||3} Eulen`;
+  function setContinueButton(label){
+    const old=document.querySelector("#checkAnswer"),next=old.cloneNode(true);
+    next.textContent=label;next.removeAttribute("id");old.replaceWith(next);next.addEventListener("click",nextTask);
   }
   function nextTask(){
     if(taskIndex<2){taskIndex++;document.querySelector(".task-box").outerHTML=renderTask(currentStation.tasks[taskIndex]);bindTask();return;}

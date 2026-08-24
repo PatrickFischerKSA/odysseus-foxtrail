@@ -52,6 +52,7 @@ for(const {s,q} of tasks){
   if(!s.place||!s.themes||s.themes.length<3)errors.push(`Ort oder Themen fehlen ${s.id}`);
   if(!q.hints||q.hints.length<2)errors.push(`Hinweise fehlen ${q.id}`);
   if(q.answer===undefined||!q.feedback||!q.objective)errors.push(`Inhalt unvollständig ${q.id}`);
+  if(!q.instruction)errors.push(`Antwortformat fehlt ${q.id}`);
   const stationPages=pagesFrom(s.pageRef);
   for(const hint of q.hints){
     const marker=hint.match(/PDF-Seite(?:n)?\s+(.+?)(?:\.|$)/);
@@ -60,6 +61,8 @@ for(const {s,q} of tasks){
     if(missing.length)errors.push(`Quellenbereich ${q.id}: PDF-Seite ${missing.join(", ")} fehlt in Station ${s.pageRef}`);
   }
 }
+if(appSource.includes('id="hintButton"')||appSource.includes("Hinweis ${opened+1} öffnen"))errors.push("Kaufbarer Stationshinweis noch vorhanden");
+if(!appSource.includes("kostenloser Hinweis:")||!appSource.includes("Musterlösung:"))errors.push("Dreistufige Rückmeldung fehlt");
 const limits=[50,100,150,200,Infinity];
 const expected=[6,13,16,22,28];
 const counts=limits.map(limit=>d.stations.filter(s=>Math.max(...pagesFrom(s.pageRef))<=limit).length);

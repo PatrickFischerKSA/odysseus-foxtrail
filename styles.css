@@ -82,6 +82,7 @@ dialog{background:rgba(6,30,42,.42);backdrop-filter:blur(22px) saturate(1.2);-we
 }
 .text-answer:focus,.media-prompt textarea:focus{outline:2px solid var(--bronze);outline-offset:2px;background:rgba(4,27,39,.38)}
 .feedback{background:rgba(15,55,70,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.answer-instruction{margin:.35rem 0 1rem;padding:.65rem .8rem;border-left:3px solid var(--bronze);background:rgba(200,149,79,.08);color:var(--sand);line-height:1.45}.attempt-path{display:flex;gap:.45rem;flex-wrap:wrap;margin:0 0 1rem}.attempt-path span{padding:.3rem .55rem;border:1px solid var(--line);border-radius:1rem;color:var(--muted);font-size:.7rem}.attempt-path span.active{border-color:var(--bronze);color:var(--sand);background:rgba(200,149,79,.12)}.feedback.solution{border-left:3px solid var(--bronze);background:rgba(200,149,79,.12)}
 .final-puzzle{background:linear-gradient(135deg,rgba(17,57,70,.34),rgba(39,46,70,.3));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 @media(prefers-reduced-motion:reduce){.cinematic-bg{display:none}}
 
