@@ -61,6 +61,7 @@ for(const {s,q} of tasks){
   if(!q.hints||q.hints.length<2)errors.push(`Hinweise fehlen ${q.id}`);
   if(q.answer===undefined||!q.feedback||!q.objective)errors.push(`Inhalt unvollständig ${q.id}`);
   if(!q.instruction)errors.push(`Antwortformat fehlt ${q.id}`);
+  if(!q.promptSimplified)errors.push(`Frage nicht einzeln vereinfacht ${q.id}`);
   if(!q.instruction.includes(q.objective))errors.push(`Individueller Prüffokus fehlt ${q.id}`);
   if(!Number.isInteger(q.expectedParts)||q.expectedParts<1)errors.push(`Erwartungsumfang fehlt ${q.id}`);
   const stationPages=pagesFrom(s.pageRef);

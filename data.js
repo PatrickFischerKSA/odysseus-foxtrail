@@ -528,10 +528,41 @@ window.ODYSSEUS_DATA = (() => {
     ,obstgarten:{place:"Laertes’ Obstgarten und Ithaka",themes:["Vater und Sohn","Verwurzelung","Friedensschluss"]}
   };
   const creativeModes=["Spurenbericht","Ursache-Folge-Protokoll","Figurennetz","Wetterlogbuch","List-Analyse","Zeugenbericht"];
+  const simplePrompts={
+    t1:"Warum sind die Götter zu Beginn der Heimreise zornig auf die Achaier?",t2:"Welche drei Paare gehören zusammen? Ordne jeden Fürsten seinem Bezug zu.",t3:"1. Welchen Rat gibt Odysseus? 2. Was tun die Gefährten? 3. Welche tödliche Folge hat das?",
+    lo1:"Warum gefährdet die Lotosfrucht die Heimkehr? Erkläre, was sie mit den Männern macht.",lo2:"Schreibe zwei kurze Gedanken eines Gefährten: 1. vor dem Essen der Lotosfrucht, 2. danach.",lo3:"Wie rettet Odysseus die Männer, die von der Lotosfrucht gegessen haben? Nenne die Schritte in der richtigen Reihenfolge.",
+    p1:"Welchen falschen Namen nennt Odysseus dem Kyklopen?",p2:"Welche zwei Handlungen helfen Odysseus und seinen Männern bei der Flucht aus der Höhle?",p3:"Was tut Odysseus nach der Flucht, das seine Heimkehr stark verlängert?",
+    pf1:"1. Was tut Odysseus aus Stolz? 2. Wie reagiert Polyphem? 3. Warum rächt sich Poseidon?",pf2:"Du bist ein geretteter Gefährte. Was hältst du von Odysseus’ Zuruf an Polyphem? Begründe kurz.",pf3:"Warum sind die Stürme nach Polyphems Fluch eine Rache Poseidons und nicht nur Zufall?",
+    w1:"Warum öffnen die Gefährten den Windsack?",w2:"Bringe die vier Ereignisse rund um den Windsack in die richtige Reihenfolge.",w3:"Wie gross ist der Verlust bei den Laistrygonen? Vergleiche ihn mit dem Verlust bei Polyphem.",
+    la1:"Warum wird der enge Hafen der Laistrygonen zur Falle für die Schiffe?",la2:"Warum kann nur Odysseus’ Schiff aus dem Hafen entkommen?",la3:"Schreibe einen kurzen Bericht: 1. Was verliert Odysseus? 2. Was ändert sich dadurch für die weitere Reise?",
+    k1:"Welche Figur gehört zu welcher Macht oder Wirkung? Ordne die drei Paare zu.",k2:"Warum muss Odysseus in die Unterwelt fahren?",k3:"Welche zwei Regeln oder Gefahren nennt Teiresias für die Heimkehr?",
+    u1:"Ordne die vier Schritte: Wie können die Toten sprechen und Wissen weitergeben?",u2:"Welche traurige Nachricht über seine Familie erfährt Odysseus von seiner Mutter?",u3:"Was muss Odysseus nach der Warnung des Teiresias besonders beachten? Warum ist er nun verantwortlich?",
+    m1:"Welche Schutzmassnahme gehört zu welcher Gefahr? Ordne die Paare zu.",m2:"Warum sagt Odysseus seinen Gefährten nichts von Skylla?",m3:"Nenne die richtigen Aussagen über Sirenen, Skylla und Charybdis.",
+    sk1:"Odysseus muss zwischen Skylla und Charybdis wählen. Warum gibt es keinen sicheren Weg?",sk2:"Schreibe zwei kurze Stimmen: 1. Ein Gefährte klagt Odysseus an. 2. Odysseus verteidigt seine Entscheidung.",sk3:"Warum kann Odysseus Skylla weder mit Mut noch mit Waffen besiegen?",
+    h1:"Bringe die vier Schritte vom Verbot bis zum Untergang des Schiffs in die richtige Reihenfolge.",h2:"Wer überlebt den Untergang des letzten Schiffs?",h3:"Warum will Odysseus Kalypso verlassen, obwohl er bei ihr sicher leben könnte?",
+    ka1:"Kalypso bietet Odysseus Sicherheit und Unsterblichkeit. Warum ist er dort trotzdem nicht glücklich?",ka2:"Wer tut was bei Odysseus’ Freilassung? Ordne Zeus, Athene, Hermes und Kalypso ihre Aufgaben zu.",ka3:"Schreibe Odysseus’ erste kurze Notiz beim Bau des Flosses. Nenne 1. seine Hoffnung und 2. eine Gefahr.",
+    i1:"Welche Gefahren bedrohen Penelope, Telemachos und Odysseus’ Haus?",i2:"Als welche Person erscheint Athene zuerst bei Telemachos?",i3:"Bringe Telemachos’ erste vier Schritte in die richtige Reihenfolge.",
+    pe1:"Wie funktioniert Penelopes List mit dem Gewebe? Was macht sie am Tag und was in der Nacht?",pe2:"Wie hilft der Webstuhl Penelope dabei, die Freier hinzuhalten?",pe3:"Schreibe eine kurze geheime Nachricht Penelopes an Telemachos: Was kann ihre List erreichen, und wo liegt ihre Grenze?",
+    s1:"Welcher Gastgeber gibt Telemachos welche Auskunft? Ordne die Paare zu.",s2:"Welche wichtigen Nachrichten über Odysseus erhält Telemachos auf seiner Reise?",s3:"Was planen die Freier, während Telemachos unterwegs ist?",
+    hi1:"Warum wollen die Freier Telemachos nach seiner Reise töten?",hi2:"Bringe den Plan der Freier und Telemachos’ Gegenplan in die richtige Reihenfolge.",hi3:"Schreibe Telemachos’ kurzen Bericht: 1. Welche Nachricht bringt er nach Hause? 2. Welche Aufgabe übernimmt er nun?",
+    f1:"Welcher göttliche Eingriff hat welche Wirkung? Ordne die Paare zu.",f2:"Warum geht Nausikaa nicht zusammen mit Odysseus durch die Stadt?",f3:"Was wird zuerst erzählt, und was geschieht zeitlich zuerst? Erkläre den Unterschied.",
+    na1:"Wie sorgt Athene dafür, dass Nausikaa den gestrandeten Odysseus findet?",na2:"Wie bittet Odysseus Nausikaa um Hilfe, ohne ihr Angst zu machen?",na3:"Warum soll Odysseus Nausikaa nicht direkt durch die Stadt folgen?",
+    e1:"Warum verwandelt Athene Odysseus in einen alten Bettler?",e2:"Welche Personen sind in Kapitel 7 treu und helfen Odysseus?",e3:"Bringe die Ereignisse zusammen: Wie treffen Odysseus und Telemachos wieder aufeinander?",
+    eu1:"Welche Handlungen zeigen Odysseus, dass Eumaios treu ist?",eu2:"Warum erzählt Odysseus Eumaios eine erfundene Geschichte über sein Leben?",eu3:"Beschreibe Eumaios mit drei konkreten Beispielen aus der Szene in seiner Hütte.",
+    b1:"Wer erkennt Odysseus sofort, obwohl er als Bettler verkleidet ist?",b2:"Wie behandelt jede Figur den unbekannten Bettler? Ordne die Paare zu.",b3:"Welche Vorteile hat Odysseus, solange niemand seine wahre Identität kennt?",
+    ar1:"1. Woran erkennt Argos Odysseus? 2. Warum darf Odysseus seine Gefühle nicht zeigen?",ar2:"Argos ist verwahrlost. Was zeigt sein Zustand über Ithaka ohne Odysseus?",ar3:"Erzähle die Begegnung aus der Sicht von Argos. Nenne den heimgekehrten Mann dabei nicht beim Namen.",
+    n1:"Woran erkennt Eurykleia Odysseus?",n2:"Warum darf Eurykleia niemandem sagen, wen sie erkannt hat?",n3:"Welche zwei Prüfungen plant Penelope vor ihrer Entscheidung?",
+    fr1:"Warum sagt Odysseus Penelope noch nicht, wer er wirklich ist?",fr2:"Wie prüft Penelope, ob die Geschichte des Fremden glaubwürdig ist?",fr3:"Warum ist Odysseus’ erfundene Lebensgeschichte mehr als eine beliebige Lüge? Nenne ihren Zweck.",
+    g1:"Bringe die vier Schritte von der Bogenprobe bis zur Enthüllung in die richtige Reihenfolge.",g2:"Welche Personen kämpfen an Odysseus’ Seite?",g3:"Warum nimmt Odysseus Eurymachos’ Verhandlungsangebot nicht an?",
+    vh1:"Bringe die vier Vorbereitungen für den Kampf in die richtige Reihenfolge.",vh2:"Warum vertraut Odysseus Eumaios und Philoitios, aber nicht Melanthios? Vergleiche ihr Verhalten.",vh3:"Nenne die Aufgabe jedes Kämpfers: 1. Odysseus, 2. Telemachos, 3. Eumaios, 4. Philoitios.",
+    l1:"Aus welchem Baum ist der feste Kern des Ehebetts gebaut?",l2:"Welche Person erkennt Odysseus an welchem Beweis? Ordne die Paare zu.",l3:"Wie wird der Kampf mit den Angehörigen der Freier beendet?",
+    ob1:"1. Warum sagt Odysseus Laertes nicht sofort, wer er ist? 2. Mit welchen Beweisen überzeugt er seinen Vater?",ob2:"Wofür stehen die Bäume, der Bogen und das Bett? Ordne jeden Gegenstand einer Beziehung oder Bedeutung zu.",ob3:"Warum muss Athene Frieden schaffen, obwohl die Freier schon besiegt sind?"
+  };
   stations.forEach((station,stationIndex)=>{
     Object.assign(station,stationContexts[station.id]);
     station.tasks.forEach((q,taskNumber)=>{
       const originalType=q.type;
+      q.prompt=simplePrompts[q.id]||q.prompt;q.promptSimplified=Boolean(simplePrompts[q.id]);
       if(q.type!=="order"){q.type="text";delete q.options;}
       const answerWords=String(Array.isArray(q.answer)?q.answer.join(" "):q.answer).trim().split(/\s+/).length;
       if(originalType==="order")q.instruction=`Erwartet: ${q.answer.length} Ereignisse. Verschiebe alle Einträge mit den Pfeilen; oben steht das früheste Ereignis.`;
