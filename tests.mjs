@@ -16,6 +16,13 @@ const migrated=migrationSandbox.stateTools.migrateState(oldState);
 if(!migrated.completed.includes("troja")||!migrated.taskResults.t1||migrated.score!==37||migrated.writing.fields.draft!=="bestehender Entwurf")errors.push("Migration zerstört bestehenden Lernstand");
 const mergedProgress=migrationSandbox.stateTools.mergeLearningStates(oldState,{completed:["polyphem"],taskResults:{t3:true},attempts:{t2:1},score:20,theoryNotes:{x:"kurz"},writing:{fields:{draft:"neu"},completed:[],revision:[],draftComplete:true}});
 if(!mergedProgress.completed.includes("troja")||!mergedProgress.completed.includes("polyphem")||!mergedProgress.taskResults.t1||!mergedProgress.taskResults.t3||mergedProgress.attempts.t2!==2||mergedProgress.score!==37||mergedProgress.theoryNotes.x!=="alter ausführlicher Text"||mergedProgress.writing.fields.draft!=="bestehender Entwurf"||!mergedProgress.writing.draftComplete)errors.push("Synchronisation überschreibt bestehenden Lernstand");
+const answerCode=appSource.slice(appSource.indexOf("function openAnswerCorrect"),appSource.indexOf("function unlocked"));
+const answerSandbox={};
+vm.runInNewContext(`function normal(s){return String(s).trim().toLocaleLowerCase("de-CH").normalize("NFD").replace(/\\p{Diacritic}/gu,"").replace(/[^a-z0-9]/g,"")}const stopWords=new Set(["die","der","das","den","dem","des","ein","eine","einen","einer","und","oder","mit","von","vor","nach","wird","werden","sich","sein","seine","ihre","ihren","ihm","sie","er","ist","als","bei","zum","zur","auf","wegen","durch","gegen"]);function words(s){return String(s).toLocaleLowerCase("de-CH").normalize("NFD").replace(/\\p{Diacritic}/gu,"").match(/[a-z0-9]+/g)?.filter(w=>w.length>2&&!stopWords.has(w))||[]}${answerCode};globalThis.check=openAnswerCorrect;`,answerSandbox);
+const taskById=id=>tasks.find(x=>x.q.id===id).q;
+if(!answerSandbox.check(taskById("t1"),"Die Gottheiten sind wütend über die Verbrechen der Sieger."))errors.push("Synonymantwort wird nicht erkannt");
+if(!answerSandbox.check(taskById("p1"),"Keiner"))errors.push("Hinterlegte Alternativantwort wird nicht erkannt");
+if(answerSandbox.check(taskById("t3"),"Odysseus hat Hunger."))errors.push("Offensichtlich falsche Kurzantwort wird akzeptiert");
 const pagesFrom=text=>{
   const pages=new Set();
   for(const match of String(text).matchAll(/(\d+)(?:\s*[–-]\s*(\d+))?/g)){
