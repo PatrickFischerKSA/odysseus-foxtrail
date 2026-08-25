@@ -78,6 +78,14 @@ export default {
           const body = await request.json();
           const serialized = validState(body.state);
           if (!serialized) return json(request, { error: "Spielstand ist ungültig oder zu gross." }, 400);
+          const baseUpdatedAt = Number(body.baseUpdatedAt) || 0;
+          if (baseUpdatedAt && row.updated_at > baseUpdatedAt) {
+            return json(request, {
+              error: "Auf dem Server liegt ein neuerer Lernstand vor.",
+              state: JSON.parse(row.state_json),
+              updatedAt: row.updated_at
+            }, 409);
+          }
           const now = Date.now();
           await env.DB.prepare("UPDATE students SET state_json = ?, updated_at = ? WHERE token_hash = ?")
             .bind(serialized, now, tokenHash).run();

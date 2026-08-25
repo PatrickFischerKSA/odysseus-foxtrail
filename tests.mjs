@@ -92,6 +92,11 @@ if(!appSource.includes("function migrateState")||!appSource.includes("function m
 if(!appSource.includes("Bestandsschutz: Versionswechsel ergänzen Daten nur"))errors.push("Bestandsschutz ist nicht als Projektregel verankert");
 if(!appSource.includes('id="teacherWalkthrough"')||!appSource.includes("Musterlösung")||!appSource.includes("bindTeacherWalkthrough"))errors.push("Lehrer-Walkthrough fehlt");
 if(!appSource.includes("stations.reduce((sum,s)=>sum+s.tasks.length,0)"))errors.push("Lehrer-Walkthrough zählt nicht sämtliche Stationsaufgaben");
+if(!appSource.includes('USERS_BACKUP_KEY = "athenes-schueler-sicherung-v1"'))errors.push("lokale Lernstand-Sicherung fehlt");
+if(!appSource.includes("activeStudentId!==scheduledStudentId"))errors.push("Profilwechsel-Schutz der Cloud-Synchronisation fehlt");
+if(!appSource.includes("response.status===409"))errors.push("Konfliktschutz für neuere Cloud-Lernstände fehlt");
+const workerSource=fs.readFileSync(new URL("./worker/src/index.js",import.meta.url),"utf8");
+if(!workerSource.includes("row.updated_at > baseUpdatedAt")||!workerSource.includes("}, 409)"))errors.push("Server schützt neuere Lernstände nicht vor Überschreiben");
 if(appSource.includes("q.promptSimplified||q.prompt"))errors.push("Lehrer-Walkthrough zeigt Wahr/Falsch-Kennzeichen statt Fragetext");
 const limits=[50,100,150,200,Infinity];
 const expected=[6,13,16,22,28];

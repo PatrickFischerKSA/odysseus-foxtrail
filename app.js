@@ -3,6 +3,7 @@
   const KEY = "athenes-archiv-v1";
   const API = "https://odysseus-foxtrail-class.patrick-fischer.workers.dev";
   const USERS_KEY = "athenes-schueler-v1";
+  const USERS_BACKUP_KEY = "athenes-schueler-sicherung-v1";
   const ACTIVE_KEY = "athenes-aktives-profil-v1";
   const TEACHER_PIN_KEY = "athenes-lehrer-pin-v1";
   const FILM_PAUSED_KEY = "athenes-hintergrundfilm-pausiert-v1";
@@ -36,9 +37,20 @@
   const teacherDialog = document.querySelector("#teacherDialog");
 
   function getUsers(){
-    try{return JSON.parse(localStorage.getItem(USERS_KEY)||"{}");}catch{return {}}
+    for(const key of [USERS_KEY,USERS_BACKUP_KEY]){
+      try{
+        const users=JSON.parse(localStorage.getItem(key)||"{}");
+        if(users&&typeof users==="object"&&!Array.isArray(users))return users;
+      }catch{}
+    }
+    return {};
   }
-  function setUsers(users){localStorage.setItem(USERS_KEY,JSON.stringify(users))}
+  function setUsers(users){
+    const serialized=JSON.stringify(users);
+    const previous=localStorage.getItem(USERS_KEY);
+    if(previous&&previous!==serialized)localStorage.setItem(USERS_BACKUP_KEY,previous);
+    localStorage.setItem(USERS_KEY,serialized);
+  }
   // Bestandsschutz: Versionswechsel ergänzen Daten nur. Lernstände werden nie durch neue Defaults ersetzt.
   function migrateState(raw={}){
     const old=raw&&typeof raw==="object"?raw:{};
@@ -119,9 +131,29 @@
     const profile=getUsers()[activeStudentId];
     if(!profile?.cloudToken)return;
     window.clearTimeout(cloudSaveTimer);
+    const scheduledStudentId=activeStudentId;
+    const scheduledToken=profile.cloudToken;
+    const scheduledState=migrateState(JSON.parse(JSON.stringify(state)));
+    const baseUpdatedAt=Number(profile.cloudUpdatedAt)||0;
     cloudSaveTimer=window.setTimeout(async()=>{
       try{
-        const response=await fetch(`${API}/student`,{method:"PUT",headers:{"Content-Type":"application/json","X-Student-Token":profile.cloudToken},body:JSON.stringify({state})});
+        if(activeStudentId!==scheduledStudentId)return;
+        const response=await fetch(`${API}/student`,{method:"PUT",headers:{"Content-Type":"application/json","X-Student-Token":scheduledToken},body:JSON.stringify({state:scheduledState,baseUpdatedAt})});
+        const result=await response.json().catch(()=>({}));
+        if(activeStudentId!==scheduledStudentId)return;
+        if(response.status===409&&result.state){
+          state=mergeLearningStates(state,result.state);
+          const users=getUsers(),current=users[scheduledStudentId];
+          if(current?.cloudToken===scheduledToken){users[scheduledStudentId]={...current,state,updatedAt:Date.now(),cloudUpdatedAt:result.updatedAt};setUsers(users)}
+          scheduleCloudSave();
+          document.querySelector("#storageStatus").dataset.sync="error";
+          document.querySelector("#storageStatus").textContent=`Angemeldet: ${profile.first} ${profile.last} · Lernstände zusammengeführt, Sicherung läuft`;
+          return;
+        }
+        if(response.ok){
+          const users=getUsers(),current=users[scheduledStudentId];
+          if(current?.cloudToken===scheduledToken){users[scheduledStudentId]={...current,cloudUpdatedAt:result.updatedAt||Date.now()};setUsers(users)}
+        }
         document.querySelector("#storageStatus").dataset.sync=response.ok?"ok":"error";
         document.querySelector("#storageStatus").textContent=response.ok
           ?`Angemeldet: ${profile.first} ${profile.last} · Spielstand synchronisiert`
@@ -240,12 +272,13 @@
           body:JSON.stringify({first,last,state:users[id].state})});
         const result=await response.json();
         if(!response.ok)throw new Error(result.error||"Anmeldung nicht möglich.");
-        users[id].cloudToken=result.token;users[id].cloudId=result.id;
+        users[id].cloudToken=result.token;users[id].cloudId=result.id;users[id].cloudUpdatedAt=result.updatedAt||0;
       }else{
         const response=await fetch(`${API}/student`,{headers:{"X-Student-Token":users[id].cloudToken}});
         if(response.ok){
           const result=await response.json();
           if(result.state)users[id].state=mergeLearningStates(users[id].state,result.state);
+          users[id].cloudUpdatedAt=result.updatedAt||users[id].cloudUpdatedAt||0;
         }
       }
       setUsers(users);activeStudentId=id;localStorage.setItem(ACTIVE_KEY,id);
@@ -255,7 +288,7 @@
     }
   }
   function logoutStudent(){
-    save();activeStudentId="";localStorage.removeItem(ACTIVE_KEY);state={...initial};
+    save();window.clearTimeout(cloudSaveTimer);activeStudentId="";localStorage.removeItem(ACTIVE_KEY);state=migrateState();
     loginDialog.close();updateHeader();showTrail();window.setTimeout(openLogin,50);
   }
   function teacherRows(students=teacherStudents){
