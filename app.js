@@ -276,7 +276,7 @@
       <summary><span>${String(index+1).padStart(2,"0")}</span><div><strong>${esc(station.title)}</strong><small>${esc(station.place)} · PDF ${esc(station.pageRef)} · ${station.tasks.length} Aufgaben</small></div></summary>
       <div class="walkthrough-station-body">${station.tasks.map((q,taskIndex)=>`<article class="walkthrough-answer">
         <header><span>AUFGABE ${taskIndex+1}/${station.tasks.length} · ${esc(q.creativeMode)}</span><strong>${esc(q.objective)}</strong></header>
-        <h4>${esc(q.promptSimplified||q.prompt)}</h4>
+        <h4>${esc(q.prompt)}</h4>
         <p class="walkthrough-format"><strong>Erwartetes Antwortformat:</strong> ${esc(q.instruction)}</p>
         <div class="walkthrough-solution"><strong>Musterlösung</strong>${teacherAnswer(q.answer)}</div>
         ${q.alternatives?.length?`<p><strong>Gültige Kurzvarianten:</strong> ${q.alternatives.map(esc).join(" · ")}</p>`:""}

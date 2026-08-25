@@ -87,6 +87,7 @@ if(!appSource.includes("function migrateState")||!appSource.includes("function m
 if(!appSource.includes("Bestandsschutz: Versionswechsel ergänzen Daten nur"))errors.push("Bestandsschutz ist nicht als Projektregel verankert");
 if(!appSource.includes('id="teacherWalkthrough"')||!appSource.includes("Musterlösung")||!appSource.includes("bindTeacherWalkthrough"))errors.push("Lehrer-Walkthrough fehlt");
 if(!appSource.includes("stations.reduce((sum,s)=>sum+s.tasks.length,0)"))errors.push("Lehrer-Walkthrough zählt nicht sämtliche Stationsaufgaben");
+if(appSource.includes("q.promptSimplified||q.prompt"))errors.push("Lehrer-Walkthrough zeigt Wahr/Falsch-Kennzeichen statt Fragetext");
 const limits=[50,100,150,200,Infinity];
 const expected=[6,13,16,22,28];
 const counts=limits.map(limit=>d.stations.filter(s=>Math.max(...pagesFrom(s.pageRef))<=limit).length);
