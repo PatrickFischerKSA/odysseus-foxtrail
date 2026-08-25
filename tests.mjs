@@ -85,6 +85,8 @@ if(!appSource.includes('<textarea class="text-answer" id="textAnswer"')||appSour
 if(!appSource.includes('const KEY = "athenes-archiv-v1"'))errors.push("Bestehender Lernstand-Schlüssel wurde verändert");
 if(!appSource.includes("function migrateState")||!appSource.includes("function mergeLearningStates"))errors.push("Verlustfreie Lernstand-Migration fehlt");
 if(!appSource.includes("Bestandsschutz: Versionswechsel ergänzen Daten nur"))errors.push("Bestandsschutz ist nicht als Projektregel verankert");
+if(!appSource.includes('id="teacherWalkthrough"')||!appSource.includes("Musterlösung")||!appSource.includes("bindTeacherWalkthrough"))errors.push("Lehrer-Walkthrough fehlt");
+if(!appSource.includes("stations.reduce((sum,s)=>sum+s.tasks.length,0)"))errors.push("Lehrer-Walkthrough zählt nicht sämtliche Stationsaufgaben");
 const limits=[50,100,150,200,Infinity];
 const expected=[6,13,16,22,28];
 const counts=limits.map(limit=>d.stations.filter(s=>Math.max(...pagesFrom(s.pageRef))<=limit).length);

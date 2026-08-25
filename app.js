@@ -266,6 +266,49 @@
         <td>${new Date(p.updatedAt||p.createdAt).toLocaleString("de-CH")}</td></tr>`;
     }).join("");
   }
+  function teacherAnswer(answer){
+    if(Array.isArray(answer))return `<ol>${answer.map(item=>`<li>${esc(item)}</li>`).join("")}</ol>`;
+    if(answer&&typeof answer==="object")return `<dl>${Object.entries(answer).map(([term,match])=>`<div><dt>${esc(term)}</dt><dd>${esc(match)}</dd></div>`).join("")}</dl>`;
+    return `<p>${esc(answer)}</p>`;
+  }
+  function teacherWalkthrough(stations){
+    const stationGuide=stations.map((station,index)=>`<details class="walkthrough-station" data-walkthrough-station data-search="${esc(`${station.title} ${station.place} ${station.themes.join(" ")} ${station.tasks.map(q=>`${q.prompt} ${q.answer}`).join(" ")}`.toLocaleLowerCase("de-CH"))}">
+      <summary><span>${String(index+1).padStart(2,"0")}</span><div><strong>${esc(station.title)}</strong><small>${esc(station.place)} · PDF ${esc(station.pageRef)} · ${station.tasks.length} Aufgaben</small></div></summary>
+      <div class="walkthrough-station-body">${station.tasks.map((q,taskIndex)=>`<article class="walkthrough-answer">
+        <header><span>AUFGABE ${taskIndex+1}/${station.tasks.length} · ${esc(q.creativeMode)}</span><strong>${esc(q.objective)}</strong></header>
+        <h4>${esc(q.promptSimplified||q.prompt)}</h4>
+        <p class="walkthrough-format"><strong>Erwartetes Antwortformat:</strong> ${esc(q.instruction)}</p>
+        <div class="walkthrough-solution"><strong>Musterlösung</strong>${teacherAnswer(q.answer)}</div>
+        ${q.alternatives?.length?`<p><strong>Gültige Kurzvarianten:</strong> ${q.alternatives.map(esc).join(" · ")}</p>`:""}
+        <div class="walkthrough-support"><p><strong>Gratis-Hinweis:</strong> ${esc(q.hints[0])}</p><p><strong>Textstelle:</strong> ${esc(q.hints[q.hints.length-1])}</p></div>
+        <p class="walkthrough-comment"><strong>Didaktische Auswertung:</strong> ${esc(q.feedback)}</p>
+      </article>`).join("")}</div>
+    </details>`).join("");
+    const oracleGuide=D.teiresiasInterrogations.map(item=>`<article class="walkthrough-answer"><header><span>TEIRESIAS</span><strong>${esc(item.source)}</strong></header><h4>${esc(item.title)}</h4><p><strong>Gesprächsimpuls:</strong> ${esc(item.guide)}</p><div class="walkthrough-solution"><strong>Vollständige Antwort</strong><p>${esc(item.answer)}</p></div></article>`).join("");
+    const openModules=[
+      ["Video-Spur",D.mediaResource.prompts,"Eine überzeugende Antwort verbindet eine konkrete Aussage aus dem Video mit einem überprüfbaren Beleg aus Lechners Text und kennzeichnet Unterschiede zwischen Primär- und Sekundärquelle."],
+      ["SRF- und Voß-Theorielabor",D.srfTheory.tasks,"Eine überzeugende Antwort verwendet die im Auftrag genannten Quellen und Begriffe, trennt Beobachtung, Deutung und Urteil und belegt jede zentrale Aussage konkret."],
+      ["Podcast-Labor",D.podcastLab.tasks,"Eine überzeugende Antwort nennt Zeitmarken beziehungsweise konkrete Podcastthesen, prüft sie an Lechners Text und unterscheidet antike Ordnung, göttliche Lenkung und heutiges Urteil."],
+      ["Heldenreise-Werkstatt",D.heroJourney.tasks,"Eine überzeugende Antwort ordnet konkrete Odysseus-Episoden begründet den passenden Stufen zu und benennt auch Grenzen oder Abweichungen des Modells."]
+    ].map(([title,tasks,standard])=>`<details class="walkthrough-module"><summary>${esc(title)} · ${tasks.length} offene Aufgaben</summary><div class="walkthrough-station-body">${tasks.map((q,i)=>`<article class="walkthrough-answer"><header><span>AUFGABE ${i+1}</span><strong>Erwartungshorizont</strong></header><h4>${esc(q.title||q.prompt)}</h4>${q.title?`<p>${esc(q.prompt)}</p>`:""}<div class="walkthrough-solution"><strong>Bewertbare Kernelemente</strong>${q.answer?teacherAnswer(q.answer):`<p>${esc(q.guide||standard)}</p>`}${q.answer?`<p>${esc(q.feedback||standard)}</p>`:""}${q.phaseIds?`<p><strong>Zugeordnete Stufen:</strong> ${q.phaseIds.map(id=>esc(D.heroJourney.phases.find(p=>p.id===id)?.title||id)).join(" · ")}</p>`:""}</div></article>`).join("")}</div></details>`).join("");
+    return `<section class="teacher-walkthrough" id="teacherWalkthrough"><div class="walkthrough-head"><div><p class="eyebrow">VOLLSTÄNDIGER LÖSUNGSWEG</p><h3>Walkthrough für die Lehrperson</h3><p>Alle ${stations.reduce((sum,s)=>sum+s.tasks.length,0)} Stationsaufgaben mit Musterlösungen, Hinweisen, Textstellen und Lernzielen. Darunter folgen die Antworten von Teiresias und Erwartungshorizonte für offene Zusatzmodule.</p></div><strong>${stations.length}<small>Stationen</small></strong></div>
+      <div class="walkthrough-tools"><label>Station oder Thema suchen<input id="walkthroughSearch" type="search" placeholder="z. B. Polyphem, List oder Seite 48"></label><button class="hint-btn" id="walkthroughOpenAll" type="button">Alle Stationen öffnen</button><button class="hint-btn" id="walkthroughCloseAll" type="button">Alle schliessen</button><button class="hint-btn" id="walkthroughPrint" type="button">Walkthrough drucken</button></div>
+      <p id="walkthroughCount" class="walkthrough-count">${stations.length} von ${stations.length} Stationen sichtbar</p>
+      <div class="walkthrough-list">${stationGuide}</div>
+      <details class="walkthrough-module"><summary>Teiresias · 6 vollständige Antworten</summary><div class="walkthrough-station-body">${oracleGuide}</div></details>
+      ${openModules}</section>`;
+  }
+  function bindTeacherWalkthrough(){
+    const items=[...document.querySelectorAll("[data-walkthrough-station]")],count=document.querySelector("#walkthroughCount");
+    document.querySelector("#walkthroughSearch").addEventListener("input",event=>{
+      const term=event.target.value.trim().toLocaleLowerCase("de-CH");let visible=0;
+      items.forEach(item=>{item.hidden=Boolean(term)&&!item.dataset.search.includes(term);if(!item.hidden)visible++});
+      count.textContent=`${visible} von ${items.length} Stationen sichtbar`;
+    });
+    document.querySelector("#walkthroughOpenAll").addEventListener("click",()=>items.filter(item=>!item.hidden).forEach(item=>item.open=true));
+    document.querySelector("#walkthroughCloseAll").addEventListener("click",()=>items.forEach(item=>item.open=false));
+    document.querySelector("#walkthroughPrint").addEventListener("click",()=>window.print());
+  }
   function showTeacherDashboard(students){
     teacherStudents=students;
     const dashboard=document.querySelector("#teacherDashboard"), gate=document.querySelector("#teacherGate");
@@ -283,10 +326,12 @@
           <span><strong>${String(index+1).padStart(2,"0")} · ${esc(station.title)}</strong><small>PDF ${esc(station.pageRef)} · regulär ${dateLabel(phase.date)}</small></span></label>`;
       }).join("")}</div>
       <div class="teacher-actions"><button class="primary" id="saveStationReleases" type="button">Freigaben speichern</button>
-      <span id="releaseFeedback" aria-live="polite"></span></div></section>`;
+      <span id="releaseFeedback" aria-live="polite"></span></div></section>
+      ${teacherWalkthrough(stations)}`;
     document.querySelector("#exportClass").addEventListener("click",exportClass);
     document.querySelector("#previewJourney").addEventListener("click",()=>{teacherDialog.close();setView("threads")});
     document.querySelector("#saveStationReleases").addEventListener("click",saveStationReleases);
+    bindTeacherWalkthrough();
   }
   async function saveStationReleases(){
     const stationIds=[...document.querySelectorAll("[data-release-station]:checked")].map(input=>input.dataset.releaseStation);
