@@ -60,6 +60,7 @@ if(!appSource.includes('VON BEGINN AN FREI · SPOILERARME ORIENTIERUNG'))errors.
 for(const tree of ["Haus Ithaka","Götterfamilien","Haus der Phaiaken","Ganzes Netz"])if(!appSource.includes(tree))errors.push(`Stammbaum fehlt: ${tree}`);
 if(tasks.some(x=>!["text","order"].includes(x.q.type)))errors.push("nicht-offener Aufgabentyp vorhanden");
 if(tasks.some(x=>["choice","multi","timeline","match"].includes(x.q.type)))errors.push("Auswahlaufgabe vorhanden");
+for(const {q} of tasks.filter(({q})=>q.type==="order"))if(!q.prompt.includes("eingeblendeten")||!q.prompt.includes("chronologisch"))errors.push(`Reihenfolgefrage ist nicht klar, ohne die Lösung vorwegzunehmen: ${q.id}`);
 if(new Set(d.stations.flatMap(s=>s.chapter)).size!==11)errors.push("nicht alle 11 Kapitel");
 for(const {s,q} of tasks){
   if(ids.has(q.id))errors.push(`doppelte ID ${q.id}`);ids.add(q.id);
@@ -69,6 +70,7 @@ for(const {s,q} of tasks){
   if(q.answer===undefined||!q.feedback||!q.objective)errors.push(`Inhalt unvollständig ${q.id}`);
   if(!q.instruction)errors.push(`Antwortformat fehlt ${q.id}`);
   if(!q.promptSimplified)errors.push(`Frage nicht einzeln vereinfacht ${q.id}`);
+  if(q.expectedParts>1&&!/(genau|beide|zwei|drei|vier|1\.|2\.|3\.|4\.|ordne|alle|je einen)/i.test(q.prompt))errors.push(`Mehrteilige Frage nennt ihren Umfang nicht eindeutig: ${q.id}`);
   if(!q.instruction.includes(q.objective))errors.push(`Individueller Prüffokus fehlt ${q.id}`);
   if(!Number.isInteger(q.expectedParts)||q.expectedParts<1)errors.push(`Erwartungsumfang fehlt ${q.id}`);
   const stationPages=pagesFrom(s.pageRef);
@@ -78,6 +80,9 @@ for(const {s,q} of tasks){
     const missing=[...pagesFrom(marker[1])].filter(page=>!stationPages.has(page));
     if(missing.length)errors.push(`Quellenbereich ${q.id}: PDF-Seite ${missing.join(", ")} fehlt in Station ${s.pageRef}`);
   }
+}
+for(const vague of ["Welche wichtigen Nachrichten","Nenne die richtigen Aussagen","Was wird zuerst erzählt, und was geschieht zeitlich zuerst","Welche Personen sind in Kapitel 7 treu","Welche Vorteile hat Odysseus","Welche zwei Prüfungen plant Penelope"]){
+  if(tasks.some(({q})=>q.prompt.includes(vague)))errors.push(`Vage Frageformulierung noch vorhanden: ${vague}`);
 }
 if(appSource.includes('id="hintButton"')||appSource.includes("Hinweis ${opened+1} öffnen"))errors.push("Kaufbarer Stationshinweis noch vorhanden");
 if(!appSource.includes("kostenloser Hinweis:")||!appSource.includes("Musterlösung:"))errors.push("Dreistufige Rückmeldung fehlt");
