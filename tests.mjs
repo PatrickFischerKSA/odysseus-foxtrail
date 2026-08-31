@@ -95,6 +95,8 @@ if(!appSource.includes("stations.reduce((sum,s)=>sum+s.tasks.length,0)"))errors.
 if(!appSource.includes('USERS_BACKUP_KEY = "athenes-schueler-sicherung-v1"'))errors.push("lokale Lernstand-Sicherung fehlt");
 if(!appSource.includes("activeStudentId!==scheduledStudentId"))errors.push("Profilwechsel-Schutz der Cloud-Synchronisation fehlt");
 if(!appSource.includes("response.status===409"))errors.push("Konfliktschutz für neuere Cloud-Lernstände fehlt");
+if(!appSource.includes("function shuffledOrder(q)")||!appSource.includes("Math.random()*(i+1)"))errors.push("Zufallsgenerator für Reihenfolgeaufgaben fehlt");
+if(!appSource.includes('JSON.stringify(items)===JSON.stringify(q.answer)'))errors.push("Reihenfolgeaufgaben können weiterhin bereits richtig erscheinen");
 const workerSource=fs.readFileSync(new URL("./worker/src/index.js",import.meta.url),"utf8");
 if(!workerSource.includes("row.updated_at > baseUpdatedAt")||!workerSource.includes("}, 409)"))errors.push("Server schützt neuere Lernstände nicht vor Überschreiben");
 if(appSource.includes("q.promptSimplified||q.prompt"))errors.push("Lehrer-Walkthrough zeigt Wahr/Falsch-Kennzeichen statt Fragetext");

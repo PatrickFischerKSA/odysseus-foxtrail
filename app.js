@@ -839,8 +839,19 @@
   function renderStationActive(){
     const box=document.querySelector(".summary"); if(box){box.outerHTML=renderTask(currentStation.tasks[taskIndex]);bindTask();}
   }
+  function shuffledOrder(q){
+    const items=[...q.options];
+    for(let i=items.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [items[i],items[j]]=[items[j],items[i]];
+    }
+    if(items.length>1&&JSON.stringify(items)===JSON.stringify(q.answer)){
+      [items[0],items[1]]=[items[1],items[0]];
+    }
+    return items;
+  }
   function renderTask(q){
-    order=q.type==="order"?[...q.options]:[];
+    order=q.type==="order"?shuffledOrder(q):[];
     const attempts=(state.attempts||{})[q.id]||0;
     const answerRows=q.expectedParts>=3?Math.min(7,q.expectedParts+1):q.expectedParts===2?4:3;
     const answerHTML=q.type==="text"?`<textarea class="text-answer" id="textAnswer" rows="${answerRows}" autocomplete="off" aria-label="Antwort" placeholder="Schreibe deine Antwort hier. Mit Enter beginnst du eine neue Zeile."></textarea>`
