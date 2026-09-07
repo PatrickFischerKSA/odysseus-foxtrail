@@ -88,6 +88,8 @@ if(appSource.includes('id="hintButton"')||appSource.includes("Hinweis ${opened+1
 if(!appSource.includes("kostenloser Hinweis:")||!appSource.includes("Musterlösung:"))errors.push("Dreistufige Rückmeldung fehlt");
 if(!appSource.includes('<textarea class="text-answer" id="textAnswer"')||appSource.includes('<input class="text-answer" id="textAnswer"'))errors.push("Stationsantworten sind nicht mehrzeilig beschreibbar");
 if(!appSource.includes('const KEY = "athenes-archiv-v1"'))errors.push("Bestehender Lernstand-Schlüssel wurde verändert");
+if(!appSource.includes('let activeStudentId = ""')||!appSource.includes("let pendingStudentId = localStorage.getItem(ACTIVE_KEY)"))errors.push("Letztes Schülerprofil wird weiterhin stillschweigend aktiviert");
+if(!appSource.includes('id="confirmStudent"')||!appSource.includes('id="chooseOtherStudent"'))errors.push("Explizite Profilbestätigung oder sicherer Profilwechsel fehlt");
 if(!appSource.includes("function migrateState")||!appSource.includes("function mergeLearningStates"))errors.push("Verlustfreie Lernstand-Migration fehlt");
 if(!appSource.includes("Bestandsschutz: Versionswechsel ergänzen Daten nur"))errors.push("Bestandsschutz ist nicht als Projektregel verankert");
 if(!appSource.includes('id="teacherWalkthrough"')||!appSource.includes("Musterlösung")||!appSource.includes("bindTeacherWalkthrough"))errors.push("Lehrer-Walkthrough fehlt");

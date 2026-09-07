@@ -22,7 +22,9 @@
     streak:0,bestStreak:0,mediaNotes:{},journeyResults:{},journeyAttempts:{},journeyHints:{},
     writing:{fields:{},completed:[],revision:[],draftComplete:false},journeyStageNotes:{},journeyStageCompleted:[],theoryNotes:{},theoryCompleted:[],podcastNotes:{},podcastCompleted:[],podcastPlayback:{},podcastListened:[],podcastAcknowledged:false,teiresiasChats:{},teiresiasCompleted:[],final:false
   };
-  let activeStudentId = localStorage.getItem(ACTIVE_KEY) || "";
+  // Auf gemeinsam genutzten Geräten niemals das zuletzt benutzte Profil stillschweigend aktivieren.
+  let pendingStudentId = localStorage.getItem(ACTIVE_KEY) || "";
+  let activeStudentId = "";
   let state = load();
   let cloudSaveTimer = null;
   let teacherStudents = [];
@@ -247,16 +249,27 @@
   }
   function openLogin(){
     const profile=getUsers()[activeStudentId];
+    const pendingProfile=!profile?getUsers()[pendingStudentId]:null;
     const form=document.querySelector("#studentLoginForm");
     const panel=document.querySelector("#activeStudentPanel");
-    form.hidden=Boolean(profile);panel.hidden=!profile;
+    form.hidden=Boolean(profile||pendingProfile);panel.hidden=!profile&&!pendingProfile;
     if(profile)panel.innerHTML=`<div class="active-profile"><strong>${esc(profile.first)} ${esc(profile.last)}</strong>
       <span>${state.completed.length}/${D.stations.length} Stationen · ${state.score} Eulen</span>
       <button class="primary" id="continueStudent" type="button">Weiterspielen</button>
       <button class="hint-btn" id="logoutStudent" type="button">Austragen</button></div>`;
+    else if(pendingProfile)panel.innerHTML=`<div class="active-profile"><span>Zuletzt auf diesem Gerät</span><strong>${esc(pendingProfile.first)} ${esc(pendingProfile.last)}</strong>
+      <p>Nur bestätigen, wenn dies wirklich dein Profil ist.</p>
+      <button class="primary" id="confirmStudent" type="button">Ja, ich bin ${esc(pendingProfile.first)} ${esc(pendingProfile.last)}</button>
+      <button class="hint-btn" id="chooseOtherStudent" type="button">Andere Person</button></div>`;
     loginDialog.showModal();
     document.querySelector("#continueStudent")?.addEventListener("click",()=>loginDialog.close());
     document.querySelector("#logoutStudent")?.addEventListener("click",logoutStudent);
+    document.querySelector("#confirmStudent")?.addEventListener("click",()=>loginStudent(pendingProfile.first,pendingProfile.last));
+    document.querySelector("#chooseOtherStudent")?.addEventListener("click",()=>{
+      pendingStudentId="";localStorage.removeItem(ACTIVE_KEY);panel.hidden=true;form.hidden=false;
+      document.querySelector("#studentFirstName").value="";document.querySelector("#studentLastName").value="";
+      document.querySelector("#studentFirstName").focus();
+    });
   }
   async function loginStudent(first,last){
     first=first.trim();last=last.trim();if(!first||!last)return;
@@ -281,14 +294,14 @@
           users[id].cloudUpdatedAt=result.updatedAt||users[id].cloudUpdatedAt||0;
         }
       }
-      setUsers(users);activeStudentId=id;localStorage.setItem(ACTIVE_KEY,id);
+      setUsers(users);activeStudentId=id;pendingStudentId=id;localStorage.setItem(ACTIVE_KEY,id);
       state=load();save();loginDialog.close();showTrail();
     }catch(error){
       feedback.innerHTML=`<div class="feedback bad">${esc(error.message)} Prüfe deine Internetverbindung.</div>`;
     }
   }
   function logoutStudent(){
-    save();window.clearTimeout(cloudSaveTimer);activeStudentId="";localStorage.removeItem(ACTIVE_KEY);state=migrateState();
+    save();window.clearTimeout(cloudSaveTimer);activeStudentId="";pendingStudentId="";localStorage.removeItem(ACTIVE_KEY);state=migrateState();
     loginDialog.close();updateHeader();showTrail();window.setTimeout(openLogin,50);
   }
   function teacherRows(students=teacherStudents){
@@ -951,7 +964,10 @@
   document.querySelector("#studentLoginForm").addEventListener("submit",event=>{
     event.preventDefault();loginStudent(document.querySelector("#studentFirstName").value,document.querySelector("#studentLastName").value);
   });
-  document.querySelector(".account-close").addEventListener("click",()=>loginDialog.close());
+  document.querySelector(".account-close").addEventListener("click",()=>{
+    if(activeStudentId)loginDialog.close();
+    else document.querySelector("#studentLoginFeedback").innerHTML='<div class="feedback bad">Bitte bestätige zuerst dein eigenes Profil oder wähle «Andere Person».</div>';
+  });
   document.querySelector(".teacher-close").addEventListener("click",()=>teacherDialog.close());
   document.querySelector("#openTeacherButton").addEventListener("click",openTeacher);
   document.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
