@@ -768,5 +768,38 @@ window.ODYSSEUS_DATA = (() => {
     ]
   };
 
+  // Jeder Prüfpunkt verbindet Erkennung und einen konkreten Überarbeitungsauftrag.
+  const journeyCriteria = {
+    hj1: [
+      ["Erkläre, dass die Heldenreise die zeitliche Entwicklung ordnet.", ["chronolog|zeitlich|reihenfolge der ereignisse|entwicklung"], ["heldenreise|modell"]],
+      ["Belege Lechners abweichende Erzählordnung mit dem Wechsel zu Telemachos oder dem Rückblick bei den Phaiaken.", ["telemach|phaiak"], ["wechsel|ruckblick|ruckblende|vergangen|erzahl"]]
+    ],
+    hj2: [
+      ["Nenne einen Helfer und erkläre seine konkrete Hilfe, etwa Hermes’ Schutz vor Kirkes Zauber.", ["hermes|athene|kirke|aiolos"], ["hilf|helf|schutz|schutzt|moly|rat|wind|befrei|unterstutz"]],
+      ["Nenne einen Gegner und seine Wirkung, etwa Poseidons Stürme als Hindernis der Heimkehr.", ["poseidon|polyphem|skylla|charybdis"], ["sturm|sturm|behind|gefahr|frisst|fress|tot|verzoger|hindern|verfolg"]],
+      ["Ergänze Teiresias als Wissensquelle und den Inhalt seiner Warnung vor Helios’ Rindern.", ["teiresias|tiresias"], ["helios|rinder|herde|verbot"]]
+    ],
+    hj3: [
+      ["Erkläre die Ursache des Verlusts: Die Gefährten verletzen das Verbot und schlachten Helios’ Rinder.", ["helios|sonnengott"], ["rind|herde|vieh"], ["schlacht|tot|ess|frevel|verbot"]],
+      ["Ergänze die Folge: Schiff und Mannschaft gehen unter; Odysseus bleibt allein.", ["schiff|boot|flotte"], ["mannschaft|gefahrt|kamerad"], ["unter|vernicht|verlust|verlier|sterb|tot|allein"]],
+      ["Zeige den Wendepunkt als Wirkungskette: Athene bittet Zeus; Hermes überbringt Kalypso den Freilassungsbefehl.", ["athene"], ["zeus"], ["hermes"], ["kalypso"], ["frei|befehl|botschaft|verlass"]]
+    ],
+    hj4: [
+      ["Ergänze ein körperliches Zeichen oder Argos’ Wiedererkennen und erkläre dessen Beweiswert.", ["narbe|argos"], ["erkenn|beweis|identitat|zeichen|geruch"]],
+      ["Erkläre, wie Bogenprobe und Enthüllung Odysseus’ Identität öffentlich bestätigen.", ["bogen"], ["spann|schiess|probe|fahigkeit"], ["erkenn|enthull|identitat|beweis|offentlich"]],
+      ["Ergänze privates Erinnerungswissen: Bettgeheimnis bei Penelope oder Bäume bei Laertes.", ["bett|baum|baume|obstgarten"], ["penelope|laertes"], ["geheim|wissen|erinner|erkenn|beweis"]]
+    ],
+    hj5: [
+      ["Beschreibe Telemachos’ unsichere Ausgangslage und Athenes Anstoss zum Handeln.", ["athene"], ["unsicher|passiv|bedrang|auftrag|ruf|mut|handel"]],
+      ["Belege seine Prüfung durch Nestor und Menelaos sowie die Gefahr des Freier-Hinterhalts.", ["nestor|pylos"], ["menelaos|sparta"], ["freier|hinterhalt"]],
+      ["Zeige das Ergebnis: Er übernimmt Verantwortung und handelt selbstständiger mit seinem Vater.", ["selbst|verantwort|reif|aktiv|handel"], ["vater|odysseus|verbundet"]]
+    ],
+    hj6: [
+      ["Benenne den Nutzen des Modells: Es ordnet Chronologie oder Entwicklung.", ["modell|heldenreise|schema"], ["chronolog|entwicklung|zeitlich|ordn|struktur"]],
+      ["Begründe eine Grenze an Lechners Erzählweise: parallele Stränge, Rückblicke oder eine nicht passende Stufe.", ["parallel|strang|strange|ruckblick|ruckblende|verweiger|nicht.*pass|fehl.*stufe"], ["lechner|roman|erzahl|odysseus|schema|modell"]]
+    ]
+  };
+  heroJourney.tasks.forEach(task => { task.criteria = journeyCriteria[task.id].map(([hint,...groups]) => ({hint,groups})); });
+
   return {threads,chapters,characters,locations,events,stations,achievements,finalPuzzle,mediaResource,heroJourney,writingProject,teiresiasInterrogations,srfTheory,podcastLab};
 })();

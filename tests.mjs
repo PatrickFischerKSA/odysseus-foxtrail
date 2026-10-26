@@ -108,3 +108,23 @@ const counts=limits.map(limit=>d.stations.filter(s=>Math.max(...pagesFrom(s.page
 if(counts.some((count,index)=>count!==expected[index]))errors.push(`unerwartete Leseplan-Pakete: ${counts.join("/")}`);
 if(errors.length){console.error(errors.join("\n"));process.exit(1)}
 console.log(`OK: ${d.stations.length} Stationen, ${tasks.length} offene/kreative Aufgaben, keine MC-Aufgabe, ${d.characters.length} Figuren.`);
+
+// Gezielte Rückmeldungen müssen genau die fehlenden Teilaspekte anzeigen.
+const reviewSandbox={};
+vm.runInNewContext(appSource.slice(appSource.indexOf('function journeyReview'),appSource.indexOf('function journeyFeedback'))+';globalThis.review=journeyReview;',reviewSandbox);
+const journeySamples=[
+  'Die Heldenreise ordnet die zeitliche Entwicklung. Lechner wechselt zu Telemachos und erzählt bei den Phaiaken im Rückblick.',
+  'Hermes hilft mit Moly gegen Kirkes Zauber. Poseidon behindert durch Stürme. Teiresias warnt vor Helios und seinen Rindern.',
+  'Die Gefährten schlachten Helios’ Rinder trotz Verbot. Schiff und Mannschaft gehen unter. Athene bittet Zeus und Hermes bringt Kalypso den Freilassungsbefehl.',
+  'Eurykleia erkennt die Narbe als Beweis. Die Bogenprobe zeigt seine Fähigkeit und enthüllt seine Identität öffentlich. Penelope erkennt ihn am Bettgeheimnis.',
+  'Athene gibt dem unsicheren Telemachos einen Auftrag. Er besucht Nestor und Menelaos und entgeht dem Hinterhalt der Freier. Er handelt selbstständig mit seinem Vater.',
+  'Das Modell ordnet die zeitliche Entwicklung. Lechners Roman nutzt parallele Stränge und Rückblicke, die das Schema durchbrechen.'
+];
+for(const [i,q] of d.heroJourney.tasks.entries()){
+  if(!reviewSandbox.review(q,journeySamples[i]).correct)throw new Error(`Vollständige Antwort abgelehnt: ${q.id}`);
+  if(reviewSandbox.review(q,'').missing.length!==q.criteria.length)throw new Error(`Leere Antwort nicht erklärt: ${q.id}`);
+  if(reviewSandbox.review(q,'Odysseus ist ein Held.').correct)throw new Error(`Pauschale Antwort akzeptiert: ${q.id}`);
+}
+const partial=reviewSandbox.review(d.heroJourney.tasks[1],'Hermes hilft mit Moly gegen Kirkes Zauber.');
+if(partial.correct||partial.missing.length!==2||!partial.missing[0].hint.includes('Gegner')||!partial.missing[1].hint.includes('Teiresias'))throw new Error('Teilantwort erhält keine gezielte Defizitrückmeldung');
+console.log('OK: 6 differenzierte Heldenreise-Prüfungen, leere und unvollständige Antworten.');

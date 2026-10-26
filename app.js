@@ -227,6 +227,15 @@
     if(q.answer&&typeof q.answer==="object")return Object.entries(q.answer).every(([a,b])=>containsIdea(a)&&containsIdea(b));
     return containsIdea(q.answer);
   }
+  function journeyReview(q,value){
+    const text=String(value).toLocaleLowerCase("de-CH").normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/ß/g,"ss");
+    const missing=(q.criteria||[]).filter(c=>!c.groups.every(pattern=>new RegExp(pattern,"u").test(text)));
+    return {correct:!!text.trim()&&missing.length===0,missing};
+  }
+  function journeyFeedback(q,value){
+    const review=journeyReview(q,value);
+    return `<div class="feedback bad" role="status"><strong>${value.trim()?"Diese Aspekte sind noch nicht ausreichend erkennbar:":"Deine Antwort fehlt noch."}</strong><ul>${review.missing.map(c=>`<li>${esc(c.hint)}</li>`).join("")}</ul><p>Die automatische Prüfung sucht inhaltliche Anhaltspunkte. Formuliere die Zusammenhänge in eigenen Sätzen und prüfe auch, ob deine Aussagen zum Text passen.</p></div>`;
+  }
   function unlocked(i,stations=readingStations()){
     if(teacherUnlockedStations.includes(stations[i].id))return true;
     return released(stations[i])&&(i===0 || state.completed.includes(stations[i-1].id));
@@ -490,7 +499,7 @@
   function bindJourneyStages(){
     state.journeyStageNotes=state.journeyStageNotes||{};state.journeyStageCompleted=state.journeyStageCompleted||[];
     document.querySelectorAll("[data-stage-note]").forEach(area=>area.addEventListener("input",()=>{state.journeyStageNotes[area.dataset.stageNote]=area.value;const count=document.querySelector(`[data-stage-count="${area.dataset.stageNote}"]`);if(count)count.textContent=`${area.value.length}/80 Zeichen`;save()}));
-    document.querySelectorAll("[data-complete-stage]").forEach(button=>button.addEventListener("click",()=>{const id=button.dataset.completeStage,note=(state.journeyStageNotes[id]||"").trim(),feedback=document.querySelector(`[data-stage-feedback="${id}"]`);if(note.length<80){feedback.innerHTML='<div class="feedback bad">Begründe genauer und verwende mindestens 80 Zeichen.</div>';return}if(!state.journeyStageCompleted.includes(id)){state.journeyStageCompleted.push(id);record(4,`Heldenreise-Stufe erarbeitet: ${D.heroJourney.phases.find(p=>p.id===id).name}`);save();showThreads()}}));
+    document.querySelectorAll("[data-complete-stage]").forEach(button=>button.addEventListener("click",()=>{const id=button.dataset.completeStage,note=(state.journeyStageNotes[id]||"").trim(),feedback=document.querySelector(`[data-stage-feedback="${id}"]`);if(note.length<80){const phase=D.heroJourney.phases.find(p=>p.id===id);feedback.innerHTML=`<div class="feedback bad" role="status"><strong>Die Deutung ist noch zu knapp (${note.length}/80 Zeichen).</strong><p>${esc(phase.workshopPrompt)}</p><p>Orientierung: ${esc(phase.events)}</p><p>Verbinde dein Beispiel mit einer Begründung: Was zeigt es über diese Stufe?</p></div>`;return}if(!state.journeyStageCompleted.includes(id)){state.journeyStageCompleted.push(id);record(4,`Heldenreise-Stufe erarbeitet: ${D.heroJourney.phases.find(p=>p.id===id).name}`);save();button.disabled=true;button.textContent="Erarbeitet ✓";const phase=D.heroJourney.phases.find(p=>p.id===id);feedback.innerHTML=`<div class="feedback" role="status"><strong>Deutung gespeichert. Prüfe deinen Inhalt:</strong><p>${esc(phase.workshopPrompt)}</p><p>Vergleiche: ${esc(phase.meaning)}</p><p>Die Textlänge bestätigt die Bearbeitung; sie ersetzt keine inhaltliche Beurteilung.</p></div>`}}));
   }
   function renderJourneyQuestion(q,index){
     const solved=(state.journeyResults||{})[q.id], hints=(state.journeyHints||{})[q.id]||0;
@@ -503,13 +512,13 @@
     document.querySelectorAll("[data-check-journey]").forEach(button=>button.addEventListener("click",()=>{
       const q=D.heroJourney.tasks.find(x=>x.id===button.dataset.checkJourney);
       const input=document.querySelector(`[data-journey-answer="${q.id}"]`), feedback=document.querySelector(`[data-journey-feedback="${q.id}"]`);
-      if(openAnswerCorrect(q,input.value)){
+      if(journeyReview(q,input.value).correct){
         state.journeyResults=state.journeyResults||{};state.journeyResults[q.id]=true;
         const first=!((state.journeyAttempts||{})[q.id]>0), reward=first?12:8;
         record(reward,`Heldenreise-Lernlabor: ${q.title}${first?" · Erstversuch":""}`);save();showThreads();
       }else{
         state.journeyAttempts=state.journeyAttempts||{};state.journeyAttempts[q.id]=(state.journeyAttempts[q.id]||0)+1;save();
-        feedback.innerHTML=`<div class="feedback bad"><strong>Noch nicht vollständig.</strong> Verbinde alle verlangten Teile mit konkreten Ereignissen.</div>`;
+        feedback.innerHTML=journeyFeedback(q,input.value);
       }
     }));
     document.querySelectorAll("[data-hint-journey]").forEach(button=>button.addEventListener("click",()=>{
