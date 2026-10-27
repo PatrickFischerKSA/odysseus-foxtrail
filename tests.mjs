@@ -84,7 +84,7 @@ for(const {s,q} of tasks){
 for(const vague of ["Welche wichtigen Nachrichten","Nenne die richtigen Aussagen","Was wird zuerst erzählt, und was geschieht zeitlich zuerst","Welche Personen sind in Kapitel 7 treu","Welche Vorteile hat Odysseus","Welche zwei Prüfungen plant Penelope"]){
   if(tasks.some(({q})=>q.prompt.includes(vague)))errors.push(`Vage Frageformulierung noch vorhanden: ${vague}`);
 }
-if(appSource.includes('id="hintButton"')||appSource.includes("Hinweis ${opened+1} öffnen"))errors.push("Kaufbarer Stationshinweis noch vorhanden");
+if(!appSource.includes('id="requestTaskHint"'))errors.push("Abrufbarer Stationshinweis fehlt");
 if(!appSource.includes("kostenloser Hinweis:")||!appSource.includes("Musterlösung:"))errors.push("Dreistufige Rückmeldung fehlt");
 if(!appSource.includes('<textarea class="text-answer" id="textAnswer"')||appSource.includes('<input class="text-answer" id="textAnswer"'))errors.push("Stationsantworten sind nicht mehrzeilig beschreibbar");
 if(!appSource.includes('const KEY = "athenes-archiv-v1"'))errors.push("Bestehender Lernstand-Schlüssel wurde verändert");
@@ -128,3 +128,37 @@ for(const [i,q] of d.heroJourney.tasks.entries()){
 const partial=reviewSandbox.review(d.heroJourney.tasks[1],'Hermes hilft mit Moly gegen Kirkes Zauber.');
 if(partial.correct||partial.missing.length!==2||!partial.missing[0].hint.includes('Gegner')||!partial.missing[1].hint.includes('Teiresias'))throw new Error('Teilantwort erhält keine gezielte Defizitrückmeldung');
 console.log('OK: 6 differenzierte Heldenreise-Prüfungen, leere und unvollständige Antworten.');
+
+const hintSandbox={};
+vm.runInNewContext(appSource.slice(appSource.indexOf('function hintStep'),appSource.indexOf('function renderJourneyQuestion'))+';globalThis.hintTools={hintStep,hintLabel,hintContent};',hintSandbox);
+for(const [opened,total,attempts,count,cost] of [[0,2,0,1,1],[1,2,0,2,1],[0,2,1,1,0],[1,2,1,2,0],[2,2,0,2,0],[2,2,3,2,0],[0,3,4,1,0]]){
+  const actual=hintSandbox.hintTools.hintStep(opened,total,attempts);
+  if(actual.count!==count||actual.cost!==cost)throw new Error('Falscher Hinweistarif: '+JSON.stringify({opened,total,attempts,actual}));
+}
+const hintQ={hints:['Erster Hinweis','Zweiter Hinweis']};
+if(!hintSandbox.hintTools.hintLabel(hintQ,0,0).includes('−1 Eule')||!hintSandbox.hintTools.hintLabel(hintQ,0,1).includes('kostenlos'))throw new Error('Hinweisbutton zeigt falsche Kosten');
+console.log('OK: Hinweise kosten vor einem Versuch 1 Eule, danach und beim Wiederansehen 0.');
+
+// Exercise the actual journey click handlers, including an empty submission,
+// a paid hint before trying, and free hints after a failed answer at zero balance.
+function journeyHarness(){
+  const elements=new Map();
+  const element=selector=>{if(!elements.has(selector))elements.set(selector,{value:'',innerHTML:'',textContent:'',dataset:{},addEventListener(type,handler){this[type]=handler;}});return elements.get(selector);};
+  const checkButton=element('check');checkButton.dataset.checkJourney='hj1';
+  const hintButton=element('[data-hint-journey="hj1"]');hintButton.dataset.hintJourney='hj1';
+  const state={score:0,journeyHints:{},journeyAttempts:{}};
+  const context={D:d,state,document:{querySelector:element,querySelectorAll:selector=>selector==='[data-check-journey]'?[checkButton]:selector==='[data-hint-journey]'?[hintButton]:[]},esc:s=>String(s),save(){},record(amount){state.score+=amount},showThreads(){}};
+  const code=appSource.slice(appSource.indexOf('function journeyReview'),appSource.indexOf('function unlocked'))+appSource.slice(appSource.indexOf('function hintStep'),appSource.indexOf('function showRoute'));
+  vm.runInNewContext(code+';bindJourneyQuestions();',context);
+  return {state,element,checkButton,hintButton};
+}
+const emptyRun=journeyHarness();emptyRun.checkButton.click();
+if(emptyRun.state.journeyAttempts.hj1)throw new Error('Leere Eingabe zählt als Versuch');
+const paidRun=journeyHarness();paidRun.state.score=5;paidRun.hintButton.click();
+if(paidRun.state.score!==4)throw new Error('Hinweis vor Versuch kostet nicht genau 1 Eule');
+paidRun.element('[data-journey-answer="hj1"]').value='Odysseus ist ein Held.';paidRun.checkButton.click();paidRun.hintButton.click();paidRun.hintButton.click();
+if(paidRun.state.score!==4||paidRun.state.journeyHints.hj1!==2)throw new Error('Kosten nach Antwortversuch oder Wiederholung');
+const freeRun=journeyHarness();freeRun.element('[data-journey-answer="hj1"]').value='Odysseus ist ein Held.';freeRun.checkButton.click();freeRun.hintButton.click();freeRun.hintButton.click();
+if(freeRun.state.score!==0||!freeRun.hintButton.textContent.includes('kostenlos'))throw new Error('Hinweise funktionieren ohne Eulen nicht');
+if(!freeRun.element('[data-journey-hints="hj1"]').innerHTML.includes(d.heroJourney.tasks[0].hints[0])||!freeRun.element('[data-journey-hints="hj1"]').innerHTML.includes(d.heroJourney.tasks[0].hints[1]))throw new Error('Geöffnete Hinweise verschwinden');
+console.log('OK: Tatsächliche Hinweis- und Prüfbuttons buchen korrekt, auch mit 0 Eulen.');

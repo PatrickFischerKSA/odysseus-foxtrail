@@ -8,8 +8,10 @@ Der vollständige Trail umfasst 28 individuell ausgearbeitete Handlungsorte mit
 
 ## Athenes Eulen
 
-Die Eulen sind ausschliesslich Spielpunkte. Denkhinweise kosten gestaffelt 1, 2 und
-3 Eulen; die genaue Leseorientierung ist der dritte Hinweis. Richtige Lösungen,
+Die Eulen sind ausschliesslich Spielpunkte. Ein neuer Hinweis kostet vor einem Antwortversuch genau eine Eule.
+Nach einem geprüften Antwortversuch sind alle Hinweise zur betreffenden Aufgabe
+kostenlos; bereits geöffnete Hinweise bleiben kostenlos sichtbar. Leere Eingaben
+zählen nicht als Antwortversuch. Die Regel gilt für Stationen und Heldenreise. Richtige Lösungen,
 Erstversuche, hinweisfreie Lösungen, Serien, Stationsabschlüsse und Abzeichen bringen
 Eulen ein. Ein anklickbares Konto in der Kopfleiste zeigt Tarife, Serien und die
 letzten Buchungen. Es gibt weder echtes Geld noch eine spielerische Sackgasse.

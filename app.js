@@ -501,17 +501,28 @@
     document.querySelectorAll("[data-stage-note]").forEach(area=>area.addEventListener("input",()=>{state.journeyStageNotes[area.dataset.stageNote]=area.value;const count=document.querySelector(`[data-stage-count="${area.dataset.stageNote}"]`);if(count)count.textContent=`${area.value.length}/80 Zeichen`;save()}));
     document.querySelectorAll("[data-complete-stage]").forEach(button=>button.addEventListener("click",()=>{const id=button.dataset.completeStage,note=(state.journeyStageNotes[id]||"").trim(),feedback=document.querySelector(`[data-stage-feedback="${id}"]`);if(note.length<80){const phase=D.heroJourney.phases.find(p=>p.id===id);feedback.innerHTML=`<div class="feedback bad" role="status"><strong>Die Deutung ist noch zu knapp (${note.length}/80 Zeichen).</strong><p>${esc(phase.workshopPrompt)}</p><p>Orientierung: ${esc(phase.events)}</p><p>Verbinde dein Beispiel mit einer Begründung: Was zeigt es über diese Stufe?</p></div>`;return}if(!state.journeyStageCompleted.includes(id)){state.journeyStageCompleted.push(id);record(4,`Heldenreise-Stufe erarbeitet: ${D.heroJourney.phases.find(p=>p.id===id).name}`);save();button.disabled=true;button.textContent="Erarbeitet ✓";const phase=D.heroJourney.phases.find(p=>p.id===id);feedback.innerHTML=`<div class="feedback" role="status"><strong>Deutung gespeichert. Prüfe deinen Inhalt:</strong><p>${esc(phase.workshopPrompt)}</p><p>Vergleiche: ${esc(phase.meaning)}</p><p>Die Textlänge bestätigt die Bearbeitung; sie ersetzt keine inhaltliche Beurteilung.</p></div>`}}));
   }
+  function hintStep(opened,total,attempts){
+    const count=Math.min(Math.max(0,Number(opened)||0),total);
+    return {count:Math.min(count+1,total),cost:count<total&&!(attempts>0)?1:0};
+  }
+  function hintLabel(q,opened,attempts){
+    return opened>=q.hints.length?"Hinweise erneut ansehen · kostenlos":`Hinweis ${opened+1} · ${attempts>0?"kostenlos":"−1 Eule"}`;
+  }
+  function hintContent(q,count){
+    return count?`<div class="feedback" role="status"><strong>Deine Hinweise:</strong><ol>${q.hints.slice(0,count).map(h=>`<li>${esc(h)}</li>`).join("")}</ol></div>`:"";
+  }
   function renderJourneyQuestion(q,index){
     const solved=(state.journeyResults||{})[q.id], hints=(state.journeyHints||{})[q.id]||0;
     return `<article class="panel journey-question ${solved?"solved":""}"><p class="source">LERNLABOR ${index+1}</p><h3>${esc(q.title)}</h3><p>${esc(q.prompt)}</p>
       ${solved?`<div class="feedback good"><strong>Gelöst.</strong> ${esc(q.feedback)}</div>`:`<textarea class="journey-answer" data-journey-answer="${q.id}" rows="4" placeholder="Begründe mit Ereignissen aus Lechners Text …"></textarea>
-      <div data-journey-feedback="${q.id}"></div><div class="actions"><button class="primary" data-check-journey="${q.id}">Antwort prüfen</button>
-      <button class="hint-btn" data-hint-journey="${q.id}">${hints>=q.hints.length?"Hinweis erneut ansehen":`Hinweis ${hints+1} · −${hints+1} Eulen`}</button></div>`}</article>`;
+      <div data-journey-feedback="${q.id}"></div><div data-journey-hints="${q.id}">${hintContent(q,hints)}</div><div class="actions"><button class="primary" data-check-journey="${q.id}">Antwort prüfen</button>
+      <button class="hint-btn" data-hint-journey="${q.id}">${hintLabel(q,hints,(state.journeyAttempts||{})[q.id]||0)}</button></div>`}</article>`;
   }
   function bindJourneyQuestions(){
     document.querySelectorAll("[data-check-journey]").forEach(button=>button.addEventListener("click",()=>{
       const q=D.heroJourney.tasks.find(x=>x.id===button.dataset.checkJourney);
       const input=document.querySelector(`[data-journey-answer="${q.id}"]`), feedback=document.querySelector(`[data-journey-feedback="${q.id}"]`);
+      if(!input.value.trim()){feedback.innerHTML='<div class="feedback" role="status">Schreibe zuerst eine Antwort und prüfe sie. Danach sind alle Hinweise zu dieser Aufgabe kostenlos.</div>';return;}
       if(journeyReview(q,input.value).correct){
         state.journeyResults=state.journeyResults||{};state.journeyResults[q.id]=true;
         const first=!((state.journeyAttempts||{})[q.id]>0), reward=first?12:8;
@@ -519,15 +530,18 @@
       }else{
         state.journeyAttempts=state.journeyAttempts||{};state.journeyAttempts[q.id]=(state.journeyAttempts[q.id]||0)+1;save();
         feedback.innerHTML=journeyFeedback(q,input.value);
+        document.querySelector(`[data-hint-journey="${q.id}"]`).textContent=hintLabel(q,(state.journeyHints||{})[q.id]||0,state.journeyAttempts[q.id]);
       }
     }));
     document.querySelectorAll("[data-hint-journey]").forEach(button=>button.addEventListener("click",()=>{
       const q=D.heroJourney.tasks.find(x=>x.id===button.dataset.hintJourney);
       state.journeyHints=state.journeyHints||{};const opened=state.journeyHints[q.id]||0;
-      const index=Math.min(opened,q.hints.length-1), cost=opened>=q.hints.length?0:index+1;
-      if(opened<q.hints.length){state.journeyHints[q.id]=opened+1;record(-cost,`Heldenreise-Hinweis: ${q.title}`,"cost");save();}
-      document.querySelector(`[data-journey-feedback="${q.id}"]`).innerHTML=`<div class="feedback"><strong>Hinweis${cost?` · −${cost} Eulen`:""}:</strong> ${esc(q.hints[index])}</div>`;
-      if(opened<q.hints.length)button.textContent=opened+1>=q.hints.length?"Hinweis erneut ansehen":`Hinweis ${opened+2} · −${opened+2} Eulen`;
+      const step=hintStep(opened,q.hints.length,(state.journeyAttempts||{})[q.id]||0);
+      state.journeyHints[q.id]=step.count;
+      if(step.cost)record(-step.cost,`Heldenreise-Hinweis vor Antwortversuch: ${q.title}`,"cost");
+      save();
+      document.querySelector(`[data-journey-hints="${q.id}"]`).innerHTML=hintContent(q,step.count);
+      button.textContent=hintLabel(q,step.count,(state.journeyAttempts||{})[q.id]||0);
     }));
   }
   function showRoute(){
@@ -649,14 +663,14 @@
     bindFinal();
   }
   function showEconomy(){
-    const costs=[["1. Fehlversuch","nur richtig/falsch"],["2. Fehlversuch","Gratis-Hinweis"],["3. Fehlversuch","Musterlösung"]];
+    const costs=[["Hinweis vor einem Antwortversuch","1 Eule"],["Hinweise nach einem Antwortversuch","kostenlos"],["Bereits geöffnete Hinweise","kostenlos"],["3. Fehlversuch","Musterlösung kostenlos"]];
     const rewards=[["Richtige Textspur","＋8"],["Beim ersten Versuch","＋4 Bonus"],["Ohne Hinweis","＋2 Bonus"],["Dreierserie beim ersten Versuch","＋5"],["Station abgeschlossen","＋12"],["Neues Abzeichen","＋10"],["Schlussrätsel","＋30"]];
     view.innerHTML=head("Athenes Eulen-Konto","SPIELPUNKTE · KEIN ECHTES GELD")+`<div class="economy-grid">
       <section class="panel balance-panel"><p class="eyebrow">AKTUELLER STAND</p><strong class="big-balance">${state.score}</strong><span>Athenes Eulen</span>
         <p>Die Eulen zeigen Ausdauer, genaue Textarbeit und klugen Umgang mit Hinweisen. Sie haben keinerlei Geldwert.</p>
         <div class="streak">Aktuelle Erstversuch-Serie: <strong>${state.streak||0}</strong> · Beste Serie: <strong>${state.bestStreak||0}</strong></div></section>
-      <section class="panel"><h3>Hilfen ohne Eulenabzug</h3><div class="tariff-list">${costs.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("")}</div>
-        <p class="muted">Bei den 84 Stationsfragen werden für Hinweise und Musterlösungen keine Eulen mehr abgezogen.</p></section>
+      <section class="panel"><h3>Hinweise und Kosten</h3><div class="tariff-list">${costs.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("")}</div>
+        <p class="muted">Die Regel gilt für Stationsfragen und Heldenreise: Sobald du bei einer Aufgabe einen Antwortversuch geprüft hast, sind alle weiteren Hinweise zu dieser Aufgabe kostenlos. Eine leere Eingabe zählt nicht als Antwortversuch.</p></section>
       <section class="panel"><h3>Belohnungen</h3><div class="tariff-list">${rewards.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("")}</div></section>
       <section class="panel ledger"><h3>Letzte Buchungen</h3>${(state.transactions||[]).length?`<div class="ledger-list">${state.transactions.map(t=>`<div>
         <span>${esc(t.label)}</span><strong class="${t.amount<0?"cost":""}">${t.amount>0?"+":""}${t.amount}</strong></div>`).join("")}</div>`:"<p>Noch keine Buchungen.</p>"}</section>
@@ -881,12 +895,20 @@
       :"";
     return `<div class="task-box"><span class="task-progress">3 · TEXTSPUR LÖSEN · ${esc(q.creativeMode).toUpperCase()} · AUFGABE ${taskIndex+1}/3 · SCHWIERIGKEIT ${"●".repeat(q.difficulty)}${"○".repeat(3-q.difficulty)}</span>
       <h3>${esc(q.prompt)}</h3><p class="answer-instruction">${esc(q.instruction||"Antworte mit Bezug zum gelesenen Text.")}</p>
-      <div class="attempt-path" aria-label="Ablauf der Lösungsversuche"><span class="${attempts===0?"active":""}">1 · Prüfung</span><span class="${attempts===1?"active":""}">2 · Gratis-Hinweis</span><span class="${attempts>=2?"active":""}">3 · Musterlösung</span></div>
-      ${answerHTML}<div id="taskFeedback"></div><div class="actions"><button class="primary" id="checkAnswer">Antwort prüfen</button></div></div>`;
+      <div class="attempt-path" aria-label="Ablauf der Lösungsversuche"><span class="${attempts===0?"active":""}">1 · Gratis-Hinweis nach Versuch</span><span class="${attempts===1?"active":""}">2 · Gratis-Hinweis</span><span class="${attempts>=2?"active":""}">3 · Musterlösung</span></div>
+      ${answerHTML}<div id="taskFeedback"></div><div id="taskHints">${hintContent(q,state.hints[q.id]||0)}</div><div class="actions"><button class="primary" id="checkAnswer">Antwort prüfen</button><button class="hint-btn" id="requestTaskHint">${hintLabel(q,state.hints[q.id]||0,attempts)}</button></div></div>`;
   }
   function bindTask(){
     const q=currentStation?.tasks[taskIndex]; if(!q)return;
     bindOrder(q);
+    document.querySelector("#requestTaskHint")?.addEventListener("click",()=>{
+      const step=hintStep(state.hints[q.id]||0,q.hints.length,state.attempts[q.id]||(state.taskResults[q.id]?1:0));
+      state.hints[q.id]=step.count;
+      if(step.cost)record(-step.cost,`Hinweis vor Antwortversuch: ${q.id}`,"cost");
+      save();
+      document.querySelector("#taskHints").innerHTML=hintContent(q,step.count);
+      document.querySelector("#requestTaskHint").textContent=hintLabel(q,step.count,state.attempts[q.id]||(state.taskResults[q.id]?1:0));
+    });
     document.querySelector("#checkAnswer")?.addEventListener("click",()=>check(q));
   }
   function bindOrder(q){
@@ -898,6 +920,9 @@
   }
   function check(q){
     let ok=false;
+    if(q.type==="text"&&!document.querySelector("#textAnswer").value.trim()){
+      document.querySelector("#taskFeedback").innerHTML='<div class="feedback" role="status">Schreibe zuerst eine Antwort und prüfe sie. Danach sind die Hinweise kostenlos.</div>';return;
+    }
     if(q.type==="text"){ok=openAnswerCorrect(q,document.querySelector("#textAnswer").value);}
     else if(q.type==="order")ok=JSON.stringify(order)===JSON.stringify(q.answer);
     const f=document.querySelector("#taskFeedback");
@@ -905,8 +930,9 @@
       state.attempts=state.attempts||{};state.attempts[q.id]=(state.attempts[q.id]||0)+1;
       state.streak=0;save();
       const attempts=state.attempts[q.id];
-      if(attempts===1){f.innerHTML='<div class="feedback bad"><strong>Falsch.</strong> Prüfe deine Antwort noch einmal am Text. Beim nächsten Fehlversuch erhältst du kostenlos einen Hinweis.</div>';return;}
-      if(attempts===2){state.hints[q.id]=Math.max(state.hints[q.id]||0,1);save();f.innerHTML=`<div class="feedback"><strong>Falsch – kostenloser Hinweis:</strong> ${esc(q.hints[0])}</div>`;return;}
+      document.querySelector("#requestTaskHint").textContent=hintLabel(q,state.hints[q.id]||0,attempts);
+      if(attempts===1){state.hints[q.id]=Math.max(state.hints[q.id]||0,1);save();document.querySelector("#taskHints").innerHTML=hintContent(q,state.hints[q.id]);document.querySelector("#requestTaskHint").textContent=hintLabel(q,state.hints[q.id],attempts);f.innerHTML='<div class="feedback bad"><strong>Noch nicht richtig – kostenloser Hinweis:</strong> Nutze die Hinweise unten und überarbeite deine Antwort. Weitere Hinweise sind jetzt kostenlos.</div>';return;}
+      if(attempts===2){const step=hintStep(state.hints[q.id]||0,q.hints.length,attempts);state.hints[q.id]=step.count;save();document.querySelector("#taskHints").innerHTML=hintContent(q,step.count);document.querySelector("#requestTaskHint").textContent=hintLabel(q,step.count,attempts);f.innerHTML='<div class="feedback"><strong>Noch nicht richtig – kostenloser Hinweis:</strong> Vergleiche die Hinweise unten mit deiner Antwort.</div>';return;}
       state.hints[q.id]=Math.max(state.hints[q.id]||0,2);save();
       const solution=Array.isArray(q.answer)?q.answer.join(" · "):q.answer&&typeof q.answer==="object"?Object.entries(q.answer).map(([a,b])=>`${a} – ${b}`).join(" · "):String(q.answer);
       f.innerHTML=`<div class="feedback solution"><strong>Musterlösung:</strong> ${esc(solution)}<br><span class="muted">Vergleiche sie mit deiner Antwort. Dafür werden keine Eulen abgezogen.</span></div>`;
