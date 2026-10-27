@@ -162,3 +162,14 @@ const freeRun=journeyHarness();freeRun.element('[data-journey-answer="hj1"]').va
 if(freeRun.state.score!==0||!freeRun.hintButton.textContent.includes('kostenlos'))throw new Error('Hinweise funktionieren ohne Eulen nicht');
 if(!freeRun.element('[data-journey-hints="hj1"]').innerHTML.includes(d.heroJourney.tasks[0].hints[0])||!freeRun.element('[data-journey-hints="hj1"]').innerHTML.includes(d.heroJourney.tasks[0].hints[1]))throw new Error('Geöffnete Hinweise verschwinden');
 console.log('OK: Tatsächliche Hinweis- und Prüfbuttons buchen korrekt, auch mit 0 Eulen.');
+
+for(const task of d.heroJourney.tasks){
+  if(task.hints.some(h=>h.length<150))throw new Error('Heldenreise-Hinweis zu knapp: '+task.id);
+  if(task.criteria.some(c=>!c.hint.startsWith('Ergänze')))throw new Error('Kein direkter Ergänzungsauftrag: '+task.id);
+}
+for(const phase of d.heroJourney.phases)if(!phase.directHint||phase.directHint.length<150)throw new Error('Konkrete Stufenhilfe fehlt: '+phase.id);
+for(const {q} of tasks){
+  if(q.type==='order'&&!q.answer.every(part=>q.hints[1].includes(part)))throw new Error('Reihenfolgehilfe unvollständig: '+q.id);
+  if(q.type==='text'&&!q.hints[1].includes('Antwortbausteine'))throw new Error('Direkte Antwortbausteine fehlen: '+q.id);
+}
+console.log('OK: Direkte Inhaltshilfen für 6 Lernlabore, 12 Stufen und 84 Stationsfragen.');

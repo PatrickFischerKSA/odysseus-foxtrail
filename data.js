@@ -801,5 +801,66 @@ window.ODYSSEUS_DATA = (() => {
   };
   heroJourney.tasks.forEach(task => { task.criteria = journeyCriteria[task.id].map(([hint,...groups]) => ({hint,groups})); });
 
+  // Direkte Hilfen nennen die nötigen Fakten statt weiterer Suchrätsel.
+  const directJourneyHints = {
+    hj1: [
+      "Schreibe zwei Aussagen: 1. Die Heldenreise ordnet die Ereignisse nach ihrer zeitlichen Entwicklung. 2. Lechner erzählt nicht durchgehend in dieser Reihenfolge: In Kapitel 4 wechselt er zu Telemachos auf Ithaka.",
+      "Als zweites Beispiel kannst du den Rückblick verwenden: Bei den Phaiaken erzählt Odysseus von früheren Abenteuern. Diese sind schon vor seiner Ankunft geschehen. Formuliere den Unterschied ausdrücklich: zeitliche Reihenfolge der Ereignisse gegenüber Reihenfolge der Erzählung."
+    ],
+    hj2: [
+      "Schreibe drei Sätze, jeweils mit Figur, Handlung und Wirkung: Hermes gibt Odysseus Moly und schützt ihn vor Kirkes Zauber. Poseidon schickt Stürme und erschwert die Heimkehr. Teiresias warnt davor, Helios’ Rinder zu schlachten.",
+      "Erkläre auch die Folgen: Hermes’ Hilfe ermöglicht die Rettung der Gefährten. Poseidons Widerstand verzögert den Heimweg. Teiresias’ Warnung nennt eine Bedingung der Heimkehr: Die Herde muss unberührt bleiben; sonst droht der Verlust von Schiff und Gefährten. Drei Namen allein reichen nicht."
+    ],
+    hj3: [
+      "Nenne zuerst den Frevel und seine Folgen: Die Gefährten schlachten trotz des Verbots die Rinder des Helios. Zeus vernichtet daraufhin Schiff und Mannschaft. Odysseus überlebt allein und ist kein Flottenführer mehr.",
+      "Ergänze dann den neuen Heimweg: Athene setzt sich bei Zeus für Odysseus ein. Zeus entscheidet seine Freilassung. Hermes überbringt Kalypso den Befehl, ihn gehen zu lassen. Verwende «weil», «deshalb» und «dadurch», damit Ursache, Verlust und Wendepunkt verbunden sind."
+    ],
+    hj4: [
+      "Nutze diese drei Beweise: 1. Eurykleia erkennt Odysseus an seiner Narbe. 2. Bei der Bogenprobe zeigt er seine besondere Fähigkeit und enthüllt sich. 3. Penelope erkennt ihn an seinem Wissen über das gemeinsame Bett.",
+      "Erkläre zu jedem Beweis, warum er überzeugt: Die Narbe ist ein körperliches Erkennungszeichen; die Bogenprobe zeigt seine Fähigkeit öffentlich; das Bettgeheimnis bestätigt privates Wissen aus der Ehe. Schreibe nicht nur «Narbe, Bogen, Bett», sondern jeweils einen erklärenden Satz."
+    ],
+    hj5: [
+      "Beschreibe drei Schritte: Am Anfang ist Telemachos unsicher und wird von den Freiern bedrängt; Athene fordert ihn zum Handeln auf. Auf seiner Reise besucht er Nestor in Pylos und Menelaos in Sparta. Die Freier planen einen Hinterhalt gegen seine Rückkehr.",
+      "Ergänze die Veränderung am Ende: Telemachos kehrt selbstständiger zurück, übernimmt Verantwortung für das Haus und unterstützt seinen Vater beim gemeinsamen Plan gegen die Freier. Verbinde Anfang und Ende: Aus dem unsicheren Sohn wird ein handelnder Verbündeter."
+    ],
+    hj6: [
+      "Schreibe einen Satz zum Nutzen: Die Heldenreise macht Odysseus’ zeitliche Entwicklung von Aufbruch über Prüfungen bis zur Rückkehr übersichtlich. Schreibe danach einen Satz zur Grenze: Lechner nutzt parallele Erzählstränge und Rückblicke statt einer geraden Abfolge.",
+      "Belege die Grenze konkret: Kapitel 4 wechselt zu Telemachos; bei den Phaiaken werden frühere Abenteuer rückblickend erzählt. Auch die Verweigerung des Rufs passt nicht eindeutig: Odysseus will heimkehren, wird aber aufgehalten. Deshalb darf das Modell die Besonderheiten des Romans nicht in ein starres Schema zwingen."
+    ]
+  };
+  heroJourney.tasks.forEach(task => { task.hints = directJourneyHints[task.id]; });
+  const stageHelp = {
+    ordinary: "Nenne Penelope als Ehefrau, Telemachos als Sohn und Laertes als Vater. Diese Beziehungen verweisen auf Odysseus’ früheres Leben auf Ithaka. Erkläre den Mangel: Der Hausherr fehlt; Familie und Ordnung sind durch seine Abwesenheit und die Freier bedroht.",
+    call: "Setze beim Ende des Trojanischen Kriegs an: Odysseus will nach Ithaka zu seiner Familie zurück. Begründe den Unterschied: Der neue Ruf führt zurück in die vertraute Welt; das klassische Abenteuer führt zunächst aus ihr heraus.",
+    refusal: "Verwende Kalypso und den geöffneten Windsack: Kalypso hält Odysseus fest; die Gefährten öffnen Aiolos’ Sack und verhindern die nahe Heimkehr. Beides verzögert die Reise. Odysseus lehnt den Heimweg aber nicht selbst ab.",
+    mentor: "Vergleiche Hermes und Teiresias: Hermes gibt Moly als Schutz vor Kirkes Zauber; Teiresias warnt vor Helios’ Rindern. Erkläre die Grenze: Schutz und Wissen helfen, nehmen Odysseus und den Gefährten aber ihre Entscheidungen nicht ab.",
+    threshold: "Wähle zum Beispiel Polyphems Höhle als Schwelle. Begründe: Odysseus erwartet Gastfreundschaft, doch der Kyklop frisst seine Gäste. Die vertraute Regel des Gastrechts gilt dort nicht. Eine andere begründete Zuordnung ist ebenfalls möglich.",
+    tests: "Nenne Hermes als Helfer, Poseidon als Gegner und Kirke als wechselhafte Kraft. Belege die Rollen: Hermes schützt mit Moly; Poseidon behindert durch Stürme; Kirke verwandelt zuerst Gefährten in Schweine und hilft später mit Rat für die Weiterfahrt.",
+    approach: "Unterscheide zwei Probleme: Aussen bedrohen Poseidons Zorn und die Gefahren der Heimfahrt Odysseus. Innen muss er die Begierden der Gefährten und seine eigene Selbstüberschätzung beherrschen. Teiresias’ Warnung vor Helios’ Herde zeigt, dass Wissen allein noch kein richtiges Handeln garantiert.",
+    ordeal: "Nenne die Verantwortlichen: Die Gefährten schlachten die Rinder; Zeus zerstört Schiff und Mannschaft; Odysseus verliert alles und überlebt allein. Urteile dann: Für ihn ist es der Tiefpunkt, aber kein eindeutiger eigener Entscheidungskampf, weil andere die entscheidenden Handlungen ausführen.",
+    reward: "Trenne Geschenke und Schätze als materielle Belohnung von Gastfreundschaft, Gehör und Anerkennung als immaterieller Belohnung. Entscheide begründet: Für die tatsächliche Heimkehr ist vor allem die von den Phaiaken organisierte Überfahrt nach Ithaka ausschlaggebend.",
+    road: "Nutze Eumaios und die Freier: Bei Eumaios kann der verkleidete Odysseus dessen Treue prüfen; im Palast beobachtet er das Verhalten der Freier. Die Tarnung verzögert seine öffentliche Rückkehr als König, schützt aber seinen Plan vor vorzeitiger Entdeckung.",
+    resurrection: "Nenne als Veränderung seine Geduld, die Bettlerlist und die Zusammenarbeit mit Telemachos und den Hirten. Nenne als Kontinuität den gewaltsamen Kampf gegen die Freier: Er handelt weiterhin auch als Krieger. Erkläre beide Seiten statt nur einen Sieg zu beschreiben.",
+    elixir: "Formuliere: Odysseus’ Elixier ist die wiederhergestellte familiäre und politische Ordnung auf Ithaka. Belege: Das Bettgeheimnis erneuert die Ehe mit Penelope; die Bäume bestätigen die Beziehung zu Laertes; Athenes Friedensschluss verhindert die nächste Racherunde."
+  };
+  heroJourney.phases.forEach(phase => { phase.directHint=stageHelp[phase.id]; });
+  // Präzise Ergänzungen auch in der Rückmeldung zu fehlenden Teilaspekten.
+  const directCriteria = {
+    hj1: ["Ergänze ausdrücklich: Die Heldenreise ordnet die Ereignisse nach ihrer zeitlichen Entwicklung.", "Ergänze ein Beispiel: In Kapitel 4 wechselt Lechner zu Telemachos; oder: Bei den Phaiaken erzählt Odysseus frühere Abenteuer als Rückblick."],
+    hj2: ["Ergänze einen Helfer mit Wirkung: Hermes gibt Odysseus Moly und schützt ihn vor Kirkes Zauber.", "Ergänze einen Gegner mit Wirkung: Poseidon schickt Stürme und behindert Odysseus’ Heimkehr.", "Ergänze Teiresias’ konkrete Warnung: Die Rinder des Helios dürfen nicht geschlachtet werden, sonst gehen Schiff und Gefährten zugrunde."],
+    hj3: ["Ergänze die Ursache: Die Gefährten schlachten trotz Verbot die Rinder des Helios.", "Ergänze den Verlust: Zeus vernichtet Schiff und Mannschaft. Odysseus überlebt allein.", "Ergänze die ganze Wirkungskette: Athene bittet Zeus um Hilfe; Zeus beschliesst Odysseus’ Freilassung; Hermes bringt Kalypso den Befehl."],
+    hj4: ["Ergänze ein Erkennungszeichen mit Erklärung: Eurykleia erkennt Odysseus an seiner alten Narbe.", "Ergänze den öffentlichen Beweis: Odysseus besteht die Bogenprobe und enthüllt dadurch seine Identität.", "Ergänze privates Wissen: Penelope erkennt Odysseus am Bettgeheimnis. Alternativ: Die Erinnerung an die Bäume überzeugt Laertes."],
+    hj5: ["Ergänze den Anfang: Athene fordert den unsicheren, von den Freiern bedrängten Telemachos zum Handeln auf.", "Ergänze die Reise und Gefahr: Telemachos besucht Nestor in Pylos und Menelaos in Sparta; die Freier planen einen Hinterhalt gegen ihn.", "Ergänze das Ergebnis: Telemachos handelt selbstständiger, übernimmt Verantwortung und unterstützt seinen Vater im gemeinsamen Plan."],
+    hj6: ["Ergänze den Nutzen: Das Modell der Heldenreise ordnet Odysseus’ zeitliche Entwicklung und macht Aufbruch, Prüfungen und Rückkehr sichtbar.", "Ergänze eine konkrete Grenze: Lechner wechselt zu Telemachos und erzählt bei den Phaiaken frühere Abenteuer im Rückblick. Das passt nicht in eine durchgehend lineare Stufenfolge."]
+  };
+  heroJourney.tasks.forEach(task => { task.criteria.forEach((criterion,i) => { criterion.hint=directCriteria[task.id][i]; }); });
+  stations.forEach(station => station.tasks.forEach(task => {
+    const parts=Array.isArray(task.answer)?task.answer:task.answer&&typeof task.answer==="object"?Object.entries(task.answer).map(([a,b])=>`${a} – ${b}`):[String(task.answer)];
+    const sourceHint=task.hints.at(-1);
+    const first=task.type==="order"?`Setze zuerst «${parts[0]}» an den Anfang und «${parts.at(-1)}» ans Ende. Ordne die übrigen Ereignisse dazwischen nach Ursache und Folge.`:`Nimm diese konkrete Information in deine Antwort auf: ${parts[0]}`;
+    const second=task.type==="order"?`Die richtige Reihenfolge lautet: ${parts.map((part,i)=>`${i+1}. ${part}`).join(" → ")}`:`Diese Antwortbausteine brauchst du vollständig: ${parts.join(" · ")}. Formuliere daraus deine Antwort in eigenen Worten.`;
+    task.hints=[first,second,sourceHint];
+  }));
+
   return {threads,chapters,characters,locations,events,stations,achievements,finalPuzzle,mediaResource,heroJourney,writingProject,teiresiasInterrogations,srfTheory,podcastLab};
 })();
